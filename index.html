@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Chord & Harmony Lab</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero-band" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Professional Keyboard Harmony Reference</p>
+          <h1 id="page-title">Chord & Harmony Lab</h1>
+        </div>
+        <div class="hero-meter" aria-label="当前和声状态">
+          <span id="heroKey">C Ionian</span>
+          <strong id="heroChord">Cmaj7</strong>
+        </div>
+      </section>
+
+      <section class="control-band" aria-label="调性与和弦控制">
+        <label class="field">
+          <span>主音</span>
+          <select id="keySelect"></select>
+        </label>
+        <label class="field">
+          <span>调式</span>
+          <select id="modeSelect"></select>
+        </label>
+        <div class="segmented" role="group" aria-label="和弦层级">
+          <button id="triadButton" class="segment" type="button">三和弦</button>
+          <button id="seventhButton" class="segment active" type="button">七和弦</button>
+        </div>
+        <button id="playProgression" class="command primary" type="button">播放级数</button>
+        <button id="clearSelection" class="command" type="button">清空选键</button>
+        <label class="field midi-field">
+          <span>MIDI 输入</span>
+          <select id="midiInputSelect" disabled>
+            <option value="">未启用</option>
+          </select>
+        </label>
+        <button id="midiEnable" class="command midi-command" type="button">启用 MIDI</button>
+      </section>
+
+      <section class="workspace-grid">
+        <section class="harmony-panel" aria-labelledby="harmony-title">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Diatonic Harmony</p>
+              <h2 id="harmony-title">各级和弦</h2>
+            </div>
+            <p id="modeFormula" class="formula-line"></p>
+          </div>
+          <div id="degreeGrid" class="degree-grid"></div>
+        </section>
+
+        <aside class="analysis-panel" aria-labelledby="analysis-title">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">Chord Identity</p>
+              <h2 id="analysis-title">和弦识别</h2>
+            </div>
+          </div>
+          <div class="analysis-scroll">
+            <div class="analysis-display">
+              <p id="manualNotes" class="note-row">未选择琴键</p>
+              <strong id="detectedName" class="detected-name">-</strong>
+              <p id="detectedFormula" class="formula-line">在下方钢琴点选音符后自动识别。</p>
+            </div>
+            <div>
+              <h3>别名 / 近似视角</h3>
+              <div id="aliasList" class="alias-list"></div>
+            </div>
+            <div class="tone-map">
+              <h3>当前和弦构成</h3>
+              <div id="toneMap" class="tone-map-grid"></div>
+            </div>
+          </div>
+          <button id="playSelected" class="command primary wide" type="button">播放所选</button>
+        </aside>
+      </section>
+
+      <section class="piano-band" aria-label="钢琴示例">
+        <div class="piano-toolbar">
+          <div>
+            <p class="eyebrow">Interactive Piano</p>
+            <h2>高亮钢琴示例</h2>
+          </div>
+          <div id="pianoLegend" class="legend">
+            <span><i class="legend-current"></i>级数和弦</span>
+            <span><i class="legend-picked"></i>手动选键</span>
+            <span><i class="legend-midi"></i>MIDI 输入</span>
+            <span><i class="legend-root"></i>根音</span>
+          </div>
+        </div>
+        <div id="piano" class="piano" role="group" aria-label="可点击钢琴键盘"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

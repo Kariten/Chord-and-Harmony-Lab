@@ -1,0 +1,17 @@
+{
+  "name": "chord-and-harmony",
+  "version": "1.0.0",
+  "description": "Interactive chord and harmony reference for keyboard players.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests",
+    "start": "python -m http.server 4173"
+  },
+  "keywords": [
+    "music",
+    "harmony",
+    "chords",
+    "piano"
+  ],
+  "license": "MIT"
+}
