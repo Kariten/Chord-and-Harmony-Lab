@@ -138,6 +138,21 @@ test("prioritizes low-string power chord shapes with muted treble strings", () =
   assert.ok([cFive, eFive, aFive].flat().every((voicing) => voicing.muteCount <= 3));
 });
 
+test("keeps fretting fingers ordered from index finger to pinky", () => {
+  const samples = [
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7] }),
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7, 11] }),
+    ...guitarVoicings({ rootPc: 9, pitchClasses: [9, 0, 4, 7] }),
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 7] }),
+    ...guitarVoicings({ rootPc: 11, pitchClasses: [11, 3, 6, 9, 1] })
+  ];
+
+  assert.ok(samples.length > 0);
+  for (const voicing of samples) {
+    assert.equal(hasOrderedFingerFrets(voicing), true, JSON.stringify(voicing.frets));
+  }
+});
+
 function hasInternalMute(frets) {
   const playedIndexes = frets
     .map((fret, index) => (fret === null ? null : index))
@@ -153,4 +168,25 @@ function barreCrossesOpenOrMutedString(frets, barre) {
 
 function sameShape(actual, expected) {
   return actual.every((fret, index) => fret === expected[index]);
+}
+
+function hasOrderedFingerFrets(voicing) {
+  const fingerFrets = new Map();
+  for (const [stringIndex, finger] of Object.entries(voicing.fingers)) {
+    const fret = voicing.frets[Number(stringIndex)];
+    if (!fret || fret < 1) continue;
+    const existing = fingerFrets.get(finger);
+    if (existing !== undefined && existing !== fret) return false;
+    fingerFrets.set(finger, fret);
+  }
+
+  let previousFret = 0;
+  for (let finger = 1; finger <= 4; finger += 1) {
+    const fret = fingerFrets.get(finger);
+    if (fret === undefined) continue;
+    if (fret < previousFret) return false;
+    previousFret = fret;
+  }
+
+  return true;
 }

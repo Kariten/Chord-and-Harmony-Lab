@@ -259,7 +259,7 @@ function buildFingering(fretted, frets) {
   });
 
   return plans
-    .filter((plan) => plan.fingers)
+    .filter((plan) => plan.fingers && hasOrderedFingerFrets(plan.fingers, frets))
     .sort((a, b) => fingeringCost(a, fretted) - fingeringCost(b, fretted))[0] ?? null;
 }
 
@@ -276,6 +276,28 @@ function fingeringCost(plan, fretted) {
   const fingerCount = new Set(Object.values(plan.fingers)).size;
   const repeatedFingerCost = Object.values(plan.fingers).length - fingerCount;
   return plan.barres.length * 5 + repeatedFingerCost * 20 + fingerCount;
+}
+
+function hasOrderedFingerFrets(fingers, frets) {
+  const fingerFrets = new Map();
+
+  for (const [stringIndex, finger] of Object.entries(fingers)) {
+    const fret = frets[Number(stringIndex)];
+    if (!fret || fret < 1) continue;
+    const existing = fingerFrets.get(finger);
+    if (existing !== undefined && existing !== fret) return false;
+    fingerFrets.set(finger, fret);
+  }
+
+  let previousFret = 0;
+  for (let finger = 1; finger <= 4; finger += 1) {
+    const fret = fingerFrets.get(finger);
+    if (fret === undefined) continue;
+    if (fret < previousFret) return false;
+    previousFret = fret;
+  }
+
+  return true;
 }
 
 function detectUsableBarres(fretted, frets) {
