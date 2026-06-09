@@ -115,6 +115,7 @@ select {
   grid-template-columns:
     minmax(74px, 0.55fr)
     minmax(120px, 1fr)
+    minmax(104px, 0.72fr)
     minmax(210px, 1.45fr)
     minmax(96px, 0.7fr)
     minmax(90px, 0.66fr)
@@ -201,11 +202,11 @@ select {
 }
 
 .midi-field {
-  grid-column: 7;
+  grid-column: 8;
 }
 
 .midi-command {
-  grid-column: 8;
+  grid-column: 9;
   padding-inline: 8px;
   line-height: 1.05;
   white-space: normal;

@@ -14,9 +14,11 @@ import {
   scalePitchClasses
 } from "./chordEngine.js";
 import { playMidiNotes } from "./audio.js";
+import { DEFAULT_LANGUAGE, LANGUAGES, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 
 const state = {
+  language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
   keyPc: 0,
   modeId: "ionian",
   chordSize: "seventh",
@@ -27,12 +29,13 @@ const state = {
   selectedMidiInputId: "",
   midiActiveMidis: new Set(),
   midiEnabled: false,
-  midiStatus: "MIDI 未启用"
+  midiStatus: ""
 };
 
 const dom = {
   keySelect: document.querySelector("#keySelect"),
   modeSelect: document.querySelector("#modeSelect"),
+  languageSelect: document.querySelector("#languageSelect"),
   triadButton: document.querySelector("#triadButton"),
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
@@ -55,11 +58,24 @@ const dom = {
 const PIANO_KEYS = pianoKeys(48, 83);
 
 function init() {
+  state.midiStatus = t("midiInitial");
+
   KEY_OPTIONS.forEach((key) => {
     dom.keySelect.append(new Option(key.name, String(key.pc)));
   });
   MODES.forEach((mode) => {
     dom.modeSelect.append(new Option(mode.name, mode.id));
+  });
+  LANGUAGES.forEach((language) => {
+    dom.languageSelect.append(new Option(language.label, language.id));
+  });
+  dom.languageSelect.value = state.language;
+
+  dom.languageSelect.addEventListener("change", () => {
+    state.language = dom.languageSelect.value;
+    localStorage.setItem("chordLabLanguage", state.language);
+    applyStaticTranslations();
+    render();
   });
 
   dom.keySelect.addEventListener("change", () => {
@@ -100,8 +116,29 @@ function init() {
   window.addEventListener("resize", scheduleFitDegreeNames);
 
   renderPiano();
+  applyStaticTranslations();
   renderMidiControls();
   render();
+}
+
+function t(key, values) {
+  return translate(state.language, key, values);
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = state.language;
+  document.title = t("pageTitle");
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-attr]").forEach((element) => {
+    element.dataset.i18nAttr.split(";").forEach((binding) => {
+      const [attribute, key] = binding.split(":");
+      if (attribute && key) {
+        element.setAttribute(attribute, t(key));
+      }
+    });
+  });
 }
 
 function render() {
@@ -113,7 +150,7 @@ function render() {
 
   dom.heroKey.textContent = `${key.name} ${mode.shortName}`;
   dom.heroChord.textContent = activeChord.name;
-  dom.modeFormula.textContent = `音阶：${scaleNotes.join("  ")}`;
+  dom.modeFormula.textContent = t("scale", { notes: scaleNotes.join("  ") });
   dom.triadButton.classList.toggle("active", state.chordSize === "triad");
   dom.seventhButton.classList.toggle("active", state.chordSize === "seventh");
   dom.keySelect.value = String(state.keyPc);
@@ -153,7 +190,7 @@ function renderDegrees(chords) {
     const play = document.createElement("button");
     play.type = "button";
     play.className = "mini-play";
-    play.textContent = "Play";
+    play.textContent = t("play");
     play.addEventListener("click", (event) => {
       event.stopPropagation();
       playMidiNotes(chordMidiVoicing(chord, 4));
@@ -189,10 +226,10 @@ function renderAnalysis(activeChord, preferFlats) {
   const manual = identifyChord(picked, { preferFlats });
 
   if (picked.length === 0) {
-    dom.manualNotes.textContent = `当前级数：${activeChord.notes.join("  ")}`;
+    dom.manualNotes.textContent = t("currentDegree", { notes: activeChord.notes.join("  ") });
     dom.detectedName.textContent = activeChord.name;
     dom.detectedFormula.textContent = `${activeChord.quality}｜${activeChord.intervals.map(intervalLabel).join("  ")}`;
-    renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: "别名" })));
+    renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: t("aliasLabel") })));
     renderToneMap(activeChord.rootPc, activeChord.pitchClasses, preferFlats);
     return;
   }
@@ -207,18 +244,18 @@ function renderAnalysis(activeChord, preferFlats) {
     return;
   }
 
-  dom.detectedName.textContent = "未匹配完整和弦";
-  dom.detectedFormula.textContent = "可继续加入三音、七音或扩展音。";
+  dom.detectedName.textContent = t("unknownChord");
+  dom.detectedFormula.textContent = t("keepAdding");
   renderAliases(manual.suggestions.map((suggestion) => ({
     symbol: suggestion.symbol,
-    quality: suggestion.missing.length ? `可补：${suggestion.missing.join(" ")}` : suggestion.quality
+    quality: suggestion.missing.length ? t("missing", { notes: suggestion.missing.join(" ") }) : suggestion.quality
   })));
   renderToneMap(null, manual.pitchClasses, preferFlats);
 }
 
 function renderAliases(items) {
   dom.aliasList.replaceChildren();
-  const list = items.length ? items : [{ symbol: "暂无", quality: "当前组合没有常用别名" }];
+  const list = items.length ? items : [{ symbol: t("noAliases"), quality: t("noCommonAliases") }];
   list.forEach((item) => {
     const chip = document.createElement("span");
     chip.className = "alias-chip";
@@ -234,7 +271,7 @@ function renderToneMap(rootPc, pitchClasses, preferFlats) {
     tone.className = "tone-pill";
     tone.classList.toggle("root", rootPc === notePc);
     const interval = rootPc === null ? "" : intervalLabel(pc(notePc - rootPc));
-    tone.innerHTML = `<strong>${noteName(notePc, preferFlats)}</strong><span>${interval || "selected"}</span>`;
+    tone.innerHTML = `<strong>${noteName(notePc, preferFlats)}</strong><span>${interval || t("selected")}</span>`;
     dom.toneMap.append(tone);
   });
 }
@@ -317,14 +354,14 @@ function playActiveSound() {
 function activeInputMidis() {
   if (state.midiActiveMidis.size > 0) {
     return {
-      source: "MIDI 输入",
+      source: t("midiInputSource"),
       values: [...state.midiActiveMidis].sort((a, b) => a - b)
     };
   }
 
   if (state.pickedMidis.size > 0) {
     return {
-      source: "手动选键",
+      source: t("manualInput"),
       values: [...state.pickedMidis].sort((a, b) => a - b)
     };
   }
@@ -335,14 +372,14 @@ function activeInputMidis() {
 async function enableMidi() {
   const support = currentMidiSupport();
   if (!support.available) {
-    state.midiStatus = "当前设备不支持 MIDI";
+    state.midiStatus = t("midiUnavailable");
     setMidiInputMessage(state.midiStatus);
     renderMidiControls();
     return;
   }
 
   try {
-    state.midiStatus = "正在请求 MIDI 权限";
+    state.midiStatus = t("requestingMidi");
     renderMidiControls();
     state.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
     state.midiEnabled = true;
@@ -350,7 +387,7 @@ async function enableMidi() {
     refreshMidiInputs();
   } catch (error) {
     state.midiEnabled = false;
-    state.midiStatus = "MIDI 权限被拒绝";
+    state.midiStatus = t("midiPermissionDenied");
     setMidiInputMessage(state.midiStatus);
     renderMidiControls();
   }
@@ -368,7 +405,7 @@ function refreshMidiInputs() {
 
   if (inputs.length === 0) {
     disconnectMidiInput();
-    state.midiStatus = "未检测到 MIDI 输入";
+    state.midiStatus = t("noMidiInputs");
     setMidiInputMessage(state.midiStatus);
     renderMidiControls();
     render();
@@ -402,7 +439,7 @@ function connectMidiInput(inputId) {
   state.selectedMidiInputId = input.id;
   state.midiInput.onmidimessage = handleMidiMessage;
   state.midiActiveMidis.clear();
-  state.midiStatus = `已连接：${midiInputLabel(input)}`;
+  state.midiStatus = t("midiConnected", { name: midiInputLabel(input) });
   dom.midiInputSelect.value = input.id;
   render();
 }
@@ -439,9 +476,9 @@ function renderMidiControls() {
   const support = currentMidiSupport();
   dom.midiEnable.disabled = !support.available;
   dom.midiInputSelect.disabled = !support.available || !state.midiEnabled || !state.midiInput;
-  dom.midiEnable.textContent = support.available ? (state.midiEnabled ? "MIDI 已启用" : "启用 MIDI") : "MIDI 不可用";
+  dom.midiEnable.textContent = support.available ? (state.midiEnabled ? t("midiEnabled") : t("enableMidi")) : t("midiUnavailable");
   if (!support.available && !state.midiEnabled) {
-    state.midiStatus = "当前设备不支持 MIDI";
+    state.midiStatus = t("midiUnavailable");
     setMidiInputMessage(state.midiStatus);
   }
   dom.midiEnable.title = state.midiStatus;
