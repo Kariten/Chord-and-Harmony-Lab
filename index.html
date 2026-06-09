@@ -72,7 +72,10 @@
           </div>
           <div id="toneView" class="analysis-scroll analysis-view active" role="tabpanel" aria-labelledby="toneViewButton">
             <div class="analysis-display">
-              <p id="manualNotes" class="note-row" data-i18n="noKeysSelected">未选择琴键</p>
+              <div class="analysis-note-line">
+                <p id="manualNotes" class="note-row" data-i18n="noKeysSelected">未选择琴键</p>
+                <button id="playSelected" class="command primary analysis-play-button" type="button" data-i18n="play">试听</button>
+              </div>
               <strong id="detectedName" class="detected-name">-</strong>
               <p id="detectedFormula" class="formula-line" data-i18n="pickKeysHint">在下方钢琴点选音符后自动识别。</p>
             </div>
@@ -96,7 +99,6 @@
             </div>
             <div id="guitarVoicingList" class="guitar-voicing-list"></div>
           </div>
-          <button id="playSelected" class="command primary wide" type="button" data-i18n="playSelected">播放所选</button>
         </aside>
       </section>
 
