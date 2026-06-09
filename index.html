@@ -66,7 +66,11 @@
               <h2 id="analysis-title" data-i18n="chordRecognition">和弦识别</h2>
             </div>
           </div>
-          <div class="analysis-scroll">
+          <div class="analysis-tabs" role="tablist" aria-label="和弦参考视图" data-i18n-attr="aria-label:analysisViews">
+            <button id="toneViewButton" class="analysis-tab active" type="button" role="tab" aria-controls="toneView" aria-selected="true" data-i18n="toneView">构成音</button>
+            <button id="guitarViewButton" class="analysis-tab" type="button" role="tab" aria-controls="guitarView" aria-selected="false" data-i18n="guitarView">吉他指法</button>
+          </div>
+          <div id="toneView" class="analysis-scroll analysis-view active" role="tabpanel" aria-labelledby="toneViewButton">
             <div class="analysis-display">
               <p id="manualNotes" class="note-row" data-i18n="noKeysSelected">未选择琴键</p>
               <strong id="detectedName" class="detected-name">-</strong>
@@ -80,6 +84,13 @@
               <h3 data-i18n="currentChordTones">当前和弦构成</h3>
               <div id="toneMap" class="tone-map-grid"></div>
             </div>
+          </div>
+          <div id="guitarView" class="analysis-scroll analysis-view guitar-view" role="tabpanel" aria-labelledby="guitarViewButton" hidden>
+            <div class="guitar-summary">
+              <h3 data-i18n="guitarVoicingsTitle">吉他指法参考</h3>
+              <p id="guitarSummary" class="formula-line"></p>
+            </div>
+            <div id="guitarVoicingList" class="guitar-voicing-list"></div>
           </div>
           <button id="playSelected" class="command primary wide" type="button" data-i18n="playSelected">播放所选</button>
         </aside>

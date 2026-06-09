@@ -14,6 +14,7 @@ import {
   scalePitchClasses
 } from "./chordEngine.js";
 import { playMidiNotes } from "./audio.js";
+import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 
@@ -29,7 +30,8 @@ const state = {
   selectedMidiInputId: "",
   midiActiveMidis: new Set(),
   midiEnabled: false,
-  midiStatus: ""
+  midiStatus: "",
+  analysisView: "tones"
 };
 
 const dom = {
@@ -40,6 +42,10 @@ const dom = {
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
   clearSelection: document.querySelector("#clearSelection"),
+  toneViewButton: document.querySelector("#toneViewButton"),
+  guitarViewButton: document.querySelector("#guitarViewButton"),
+  toneView: document.querySelector("#toneView"),
+  guitarView: document.querySelector("#guitarView"),
   playSelected: document.querySelector("#playSelected"),
   midiEnable: document.querySelector("#midiEnable"),
   midiInputSelect: document.querySelector("#midiInputSelect"),
@@ -51,6 +57,8 @@ const dom = {
   detectedFormula: document.querySelector("#detectedFormula"),
   aliasList: document.querySelector("#aliasList"),
   toneMap: document.querySelector("#toneMap"),
+  guitarSummary: document.querySelector("#guitarSummary"),
+  guitarVoicingList: document.querySelector("#guitarVoicingList"),
   heroKey: document.querySelector("#heroKey"),
   heroChord: document.querySelector("#heroChord")
 };
@@ -102,6 +110,8 @@ function init() {
   });
 
   dom.playProgression.addEventListener("click", playProgression);
+  dom.toneViewButton.addEventListener("click", () => setAnalysisView("tones"));
+  dom.guitarViewButton.addEventListener("click", () => setAnalysisView("guitar"));
   dom.playSelected.addEventListener("click", playActiveSound);
   dom.midiEnable.addEventListener("click", enableMidi);
   dom.midiInputSelect.addEventListener("change", () => {
@@ -164,9 +174,27 @@ function render() {
   dom.modeSelect.value = state.modeId;
 
   renderMidiControls();
+  renderAnalysisTabs();
   renderDegrees(chords);
   renderAnalysis(activeChord, key.preferFlats);
   renderPianoState(activeChord, key.preferFlats);
+}
+
+function setAnalysisView(view) {
+  state.analysisView = view;
+  renderAnalysisTabs();
+}
+
+function renderAnalysisTabs() {
+  const showGuitar = state.analysisView === "guitar";
+  dom.toneViewButton.classList.toggle("active", !showGuitar);
+  dom.guitarViewButton.classList.toggle("active", showGuitar);
+  dom.toneViewButton.setAttribute("aria-selected", String(!showGuitar));
+  dom.guitarViewButton.setAttribute("aria-selected", String(showGuitar));
+  dom.toneView.hidden = showGuitar;
+  dom.guitarView.hidden = !showGuitar;
+  dom.toneView.classList.toggle("active", !showGuitar);
+  dom.guitarView.classList.toggle("active", showGuitar);
 }
 
 function renderDegrees(chords) {
@@ -238,6 +266,12 @@ function renderAnalysis(activeChord, preferFlats) {
     dom.detectedFormula.textContent = `${activeChord.quality}｜${activeChord.intervals.map(intervalLabel).join("  ")}`;
     renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: t("aliasLabel") })));
     renderToneMap(activeChord.rootPc, activeChord.pitchClasses, preferFlats);
+    renderGuitarReference({
+      name: activeChord.name,
+      rootPc: activeChord.rootPc,
+      pitchClasses: activeChord.pitchClasses,
+      preferFlats
+    });
     return;
   }
 
@@ -248,6 +282,12 @@ function renderAnalysis(activeChord, preferFlats) {
     dom.detectedFormula.textContent = `${manual.primary.quality}｜${manual.primary.intervalLabels.join("  ")}`;
     renderAliases(manual.aliases);
     renderToneMap(manual.primary.rootPc, manual.pitchClasses, preferFlats);
+    renderGuitarReference({
+      name: manual.primary.symbol,
+      rootPc: manual.primary.rootPc,
+      pitchClasses: manual.pitchClasses,
+      preferFlats
+    });
     return;
   }
 
@@ -258,6 +298,7 @@ function renderAnalysis(activeChord, preferFlats) {
     quality: suggestion.missing.length ? t("missing", { notes: suggestion.missing.join(" ") }) : suggestion.quality
   })));
   renderToneMap(null, manual.pitchClasses, preferFlats);
+  renderGuitarReference(null);
 }
 
 function renderAliases(items) {
@@ -281,6 +322,111 @@ function renderToneMap(rootPc, pitchClasses, preferFlats) {
     tone.innerHTML = `<strong>${noteName(notePc, preferFlats)}</strong><span>${interval || t("selected")}</span>`;
     dom.toneMap.append(tone);
   });
+}
+
+function renderGuitarReference(context) {
+  dom.guitarVoicingList.replaceChildren();
+  if (!context) {
+    dom.guitarSummary.textContent = t("noGuitarVoicings");
+    return;
+  }
+
+  const voicings = guitarVoicings({
+    rootPc: context.rootPc,
+    pitchClasses: context.pitchClasses,
+    preferFlats: context.preferFlats,
+    limit: 60
+  });
+
+  dom.guitarSummary.textContent = voicings.length
+    ? t("guitarSummary", { name: context.name, count: String(voicings.length) })
+    : t("noGuitarVoicings");
+
+  voicings.forEach((voicing, index) => {
+    const card = document.createElement("article");
+    card.className = "guitar-card";
+
+    const header = document.createElement("div");
+    header.className = "guitar-card-header";
+    const title = document.createElement("strong");
+    title.textContent = `${context.name} · ${voicing.label}`;
+    const meta = document.createElement("small");
+    meta.textContent = voicing.rootInBass ? t("rootBass") : t("inversionShape");
+    header.append(title, meta);
+
+    const diagram = createGuitarDiagram(voicing, index);
+    const notes = document.createElement("p");
+    notes.className = "guitar-notes";
+    notes.textContent = voicing.missingNotes.length
+      ? t("omittedNotes", { notes: voicing.missingNotes.join(" ") })
+      : t("allChordTones");
+
+    card.append(header, diagram, notes);
+    dom.guitarVoicingList.append(card);
+  });
+}
+
+function createGuitarDiagram(voicing, index) {
+  const diagram = document.createElement("div");
+  diagram.className = "guitar-diagram";
+
+  const status = document.createElement("div");
+  status.className = "guitar-string-status";
+  voicing.frets.forEach((fret) => {
+    const item = document.createElement("span");
+    item.textContent = fret === null ? "x" : fret === 0 ? "o" : "";
+    status.append(item);
+  });
+
+  const displayStart = voicing.position === 1 ? 1 : voicing.position;
+  const fretboard = document.createElement("div");
+  fretboard.className = "guitar-fretboard";
+  fretboard.setAttribute("aria-label", `${voicing.label} ${voicing.frets.map((fret) => fret ?? "x").join(" ")}`);
+
+  STANDARD_GUITAR_TUNING.forEach((string, stringIndex) => {
+    const line = document.createElement("span");
+    line.className = "guitar-string-line";
+    line.style.setProperty("--string-left", `${((stringIndex + 0.5) / STANDARD_GUITAR_TUNING.length) * 100}%`);
+    line.title = string.name;
+    fretboard.append(line);
+  });
+
+  for (let fretIndex = 0; fretIndex <= 5; fretIndex += 1) {
+    const line = document.createElement("span");
+    line.className = "guitar-fret-line";
+    line.style.setProperty("--fret-top", `${(fretIndex / 5) * 100}%`);
+    fretboard.append(line);
+  }
+
+  voicing.frets.forEach((fret, stringIndex) => {
+    if (!fret) return;
+    const row = fret - displayStart + 1;
+    if (row < 1 || row > 5) return;
+    const marker = document.createElement("span");
+    marker.className = "guitar-marker";
+    marker.style.gridColumn = String(stringIndex + 1);
+    marker.style.gridRow = String(row);
+    marker.textContent = voicing.fingers[stringIndex] ?? "";
+    fretboard.append(marker);
+  });
+
+  voicing.barres.forEach((barre) => {
+    const row = barre.fret - displayStart + 1;
+    if (row < 1 || row > 5) return;
+    const marker = document.createElement("span");
+    marker.className = "guitar-barre";
+    marker.style.gridColumn = `${barre.fromString + 1} / ${barre.toString + 2}`;
+    marker.style.gridRow = String(row);
+    marker.textContent = "1";
+    fretboard.append(marker);
+  });
+
+  const position = document.createElement("span");
+  position.className = "guitar-position";
+  position.textContent = voicing.position === 1 ? "" : String(displayStart);
+
+  diagram.append(status, fretboard, position);
+  return diagram;
 }
 
 function renderPiano() {

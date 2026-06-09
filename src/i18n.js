@@ -58,7 +58,17 @@ export const TRANSLATIONS = {
     pianoLabel: "可点击钢琴键盘",
     play: "试听",
     aliasLabel: "别名",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "和弦参考视图",
+    toneView: "构成音",
+    guitarView: "吉他指法",
+    guitarVoicingsTitle: "吉他指法参考",
+    guitarSummary: "{name} · 12品以内 {count} 个按法",
+    noGuitarVoicings: "当前组合暂无可用吉他指法",
+    rootBass: "根音低音",
+    inversionShape: "转位 / 省略",
+    omittedNotes: "省略：{notes}",
+    allChordTones: "包含全部和弦音"
   },
   en: {
     pageTitle: "Chord & Harmony Lab",
@@ -108,7 +118,17 @@ export const TRANSLATIONS = {
     pianoLabel: "Clickable piano keyboard",
     play: "Play",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Chord reference views",
+    toneView: "Tones",
+    guitarView: "Guitar",
+    guitarVoicingsTitle: "Guitar Voicings",
+    guitarSummary: "{name} · {count} shapes before fret 12",
+    noGuitarVoicings: "No practical guitar voicing for this set",
+    rootBass: "Root in bass",
+    inversionShape: "Inversion / omission",
+    omittedNotes: "Omit: {notes}",
+    allChordTones: "All chord tones included"
   },
   ja: {
     pageTitle: "Chord & Harmony Lab",
@@ -158,7 +178,17 @@ export const TRANSLATIONS = {
     pianoLabel: "クリック可能なピアノ鍵盤",
     play: "再生",
     aliasLabel: "別名",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "コード参照ビュー",
+    toneView: "構成音",
+    guitarView: "ギター",
+    guitarVoicingsTitle: "ギター・ボイシング",
+    guitarSummary: "{name} · 12フレット以内 {count} 種",
+    noGuitarVoicings: "この組み合わせの実用的なギター・ボイシングはありません",
+    rootBass: "ルートがベース",
+    inversionShape: "転回 / 省略",
+    omittedNotes: "省略：{notes}",
+    allChordTones: "全コードトーンを含む"
   },
   ko: {
     pageTitle: "Chord & Harmony Lab",
@@ -208,7 +238,17 @@ export const TRANSLATIONS = {
     pianoLabel: "클릭 가능한 피아노 건반",
     play: "재생",
     aliasLabel: "별칭",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "코드 참고 보기",
+    toneView: "구성음",
+    guitarView: "기타",
+    guitarVoicingsTitle: "기타 보이싱",
+    guitarSummary: "{name} · 12프렛 이내 {count}개",
+    noGuitarVoicings: "현재 조합에 맞는 실용적인 기타 보이싱이 없습니다",
+    rootBass: "근음 베이스",
+    inversionShape: "전위 / 생략",
+    omittedNotes: "생략: {notes}",
+    allChordTones: "모든 코드톤 포함"
   },
   es: {
     pageTitle: "Chord & Harmony Lab",
@@ -258,7 +298,17 @@ export const TRANSLATIONS = {
     pianoLabel: "Teclado de piano interactivo",
     play: "Reproducir",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Vistas de referencia",
+    toneView: "Notas",
+    guitarView: "Guitarra",
+    guitarVoicingsTitle: "Digitaciones de guitarra",
+    guitarSummary: "{name} · {count} posiciones antes del traste 12",
+    noGuitarVoicings: "No hay una digitación práctica para este conjunto",
+    rootBass: "Raíz en el bajo",
+    inversionShape: "Inversión / omisión",
+    omittedNotes: "Omitir: {notes}",
+    allChordTones: "Incluye todas las notas"
   },
   de: {
     pageTitle: "Chord & Harmony Lab",
@@ -308,7 +358,17 @@ export const TRANSLATIONS = {
     pianoLabel: "Klickbare Klaviertastatur",
     play: "Spielen",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Akkord-Referenzansichten",
+    toneView: "Töne",
+    guitarView: "Gitarre",
+    guitarVoicingsTitle: "Gitarren-Voicings",
+    guitarSummary: "{name} · {count} Griffe bis Bund 12",
+    noGuitarVoicings: "Keine praktische Gitarren-Voicing für diese Auswahl",
+    rootBass: "Grundton im Bass",
+    inversionShape: "Umkehrung / Auslassung",
+    omittedNotes: "Auslassen: {notes}",
+    allChordTones: "Alle Akkordtöne enthalten"
   }
 };
 
