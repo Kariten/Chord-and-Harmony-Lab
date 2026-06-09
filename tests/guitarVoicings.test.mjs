@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { guitarVoicings } from "../src/guitarVoicings.js";
 
-test("generates playable C major seventh guitar voicings before the twelfth fret", () => {
+test("generates playable C major seventh guitar voicings through the fifteenth fret", () => {
   const voicings = guitarVoicings({
     rootPc: 0,
     pitchClasses: [0, 4, 7, 11]
@@ -10,7 +10,7 @@ test("generates playable C major seventh guitar voicings before the twelfth fret
 
   assert.ok(voicings.length > 0);
   assert.ok(voicings.length <= 8);
-  assert.ok(voicings.every((voicing) => voicing.frets.every((fret) => fret === null || (fret >= 0 && fret <= 12))));
+  assert.ok(voicings.every((voicing) => voicing.frets.every((fret) => fret === null || (fret >= 0 && fret <= 15))));
   assert.ok(voicings.every((voicing) => voicing.notePcs.includes(0)));
   assert.ok(voicings.every((voicing) => voicing.notePcs.includes(4)));
   assert.ok(voicings.every((voicing) => voicing.notePcs.includes(11)));
@@ -38,7 +38,20 @@ test("returns voicings from multiple fret positions", () => {
   const positions = new Set(voicings.map((voicing) => voicing.position));
 
   assert.ok(positions.size >= 2);
-  assert.ok(Math.max(...positions) <= 12);
+  assert.ok(Math.max(...positions) <= 15);
+});
+
+test("keeps only one guitar voicing per starting position", () => {
+  const samples = [
+    guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7, 11] }),
+    guitarVoicings({ rootPc: 7, pitchClasses: [7, 11, 2, 5] }),
+    guitarVoicings({ rootPc: 11, pitchClasses: [11, 3, 6, 9, 1] })
+  ];
+
+  for (const voicings of samples) {
+    const positions = voicings.map((voicing) => voicing.position);
+    assert.equal(new Set(positions).size, positions.length);
+  }
 });
 
 test("keeps dense chord results compact and transparent", () => {

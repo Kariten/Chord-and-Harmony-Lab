@@ -10,7 +10,7 @@ export const STANDARD_GUITAR_TUNING = [
 ];
 
 const MUTE = null;
-const DEFAULT_MAX_FRET = 12;
+const DEFAULT_MAX_FRET = 15;
 const DEFAULT_MAX_SPAN = 4;
 const DEFAULT_LIMIT = 8;
 
@@ -185,19 +185,20 @@ function selectVoicings(candidates, limit) {
   const complete = ranked.filter((candidate) => candidate.missingPcs.length === 0);
   const pool = complete.length >= Math.min(4, limit) ? complete : ranked;
   const selected = [];
-  const positionCounts = new Map();
+  const usedPositions = new Set();
 
   for (const candidate of pool) {
-    const count = positionCounts.get(candidate.position) ?? 0;
-    if (count >= 2) continue;
+    if (usedPositions.has(candidate.position)) continue;
     selected.push(candidate);
-    positionCounts.set(candidate.position, count + 1);
+    usedPositions.add(candidate.position);
     if (selected.length === limit) return selected;
   }
 
   for (const candidate of ranked) {
     if (selected.includes(candidate)) continue;
+    if (usedPositions.has(candidate.position)) continue;
     selected.push(candidate);
+    usedPositions.add(candidate.position);
     if (selected.length === limit) return selected;
   }
 
