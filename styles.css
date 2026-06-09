@@ -404,10 +404,36 @@ select:disabled {
 
 .analysis-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   align-content: stretch;
   gap: 8px;
   overflow: hidden;
+}
+
+.analysis-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.analysis-tab {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analysis-tab.active {
+  background: white;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 
 .analysis-scroll {
@@ -420,6 +446,10 @@ select:disabled {
   padding-right: 2px;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+
+.analysis-view[hidden] {
+  display: none;
 }
 
 .analysis-display {
@@ -511,6 +541,234 @@ select:disabled {
 .tone-pill.root {
   border-color: var(--coral);
   background: #fff7ed;
+}
+
+.guitar-view {
+  align-content: start;
+}
+
+.guitar-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.guitar-summary h3 {
+  margin-bottom: 0;
+}
+
+.guitar-title-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-width: 0;
+}
+
+.info-tip-button {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-tip-button:hover,
+.info-tip-button:focus-visible,
+.info-tip-button[aria-expanded="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #ffffff;
+  outline: none;
+}
+
+.info-tip-bubble {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 100;
+  top: var(--tip-top, 120px);
+  left: var(--tip-left, 12px);
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(50vh, 240px);
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.52;
+  white-space: normal;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.guitar-title-row:hover .info-tip-bubble,
+.info-tip-button:focus-visible + .info-tip-bubble,
+.info-tip-button[aria-expanded="true"] + .info-tip-bubble {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.guitar-voicing-list {
+  display: grid;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.guitar-card {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.guitar-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.guitar-card-header strong {
+  color: var(--blue);
+  font-size: 16px;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guitar-card-header small,
+.guitar-notes {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.guitar-diagram {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 4px 7px;
+  align-items: stretch;
+}
+
+.guitar-string-status {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 142px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-align: center;
+  text-transform: uppercase;
+  align-items: center;
+}
+
+.guitar-fretboard {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 142px;
+  border: 2px solid #111827;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #fffaf0, #f8fafc);
+  overflow: hidden;
+}
+
+.guitar-fretboard.nut-position {
+  border-left-width: 7px;
+}
+
+.guitar-string-line,
+.guitar-fret-line {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.guitar-string-line {
+  left: 0;
+  right: 0;
+  top: var(--string-top);
+  height: 2px;
+  transform: translateY(-1px);
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.guitar-fret-line {
+  top: 0;
+  bottom: 0;
+  left: var(--fret-left);
+  width: 2px;
+  transform: translateX(-1px);
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.guitar-marker,
+.guitar-barre {
+  z-index: 3;
+  place-self: center;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: var(--green);
+  color: white;
+  font-size: 13px;
+  font-weight: 950;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.22);
+}
+
+.guitar-barre {
+  z-index: 2;
+  width: 24px;
+  height: calc(100% - 8px);
+  min-height: 24px;
+  border-radius: 999px;
+  background: #0f172a;
+}
+
+.guitar-position {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  align-self: center;
+  min-height: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.guitar-notes {
+  margin: 0;
+  line-height: 1.2;
 }
 
 .piano-band {
@@ -868,6 +1126,10 @@ select:disabled {
 
   .analysis-panel {
     grid-column: 1 / -1;
+  }
+
+  .info-tip-bubble {
+    width: min(520px, calc(100vw - 24px));
   }
 
   .piano {

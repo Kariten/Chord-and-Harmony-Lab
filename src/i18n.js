@@ -58,7 +58,19 @@ export const TRANSLATIONS = {
     pianoLabel: "可点击钢琴键盘",
     play: "试听",
     aliasLabel: "别名",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "和弦参考视图",
+    toneView: "构成音",
+    guitarView: "吉他指法",
+    guitarVoicingsTitle: "吉他指法参考",
+    guitarTipLabel: "吉他指法提示",
+    guitarTipText: "吉他和弦指法由程序生成，可能存在不合理/无法实现的指法，仅供参考",
+    guitarSummary: "{name} · 15品以内 {count} 个按法",
+    noGuitarVoicings: "当前组合暂无可用吉他指法",
+    rootBass: "根音低音",
+    inversionShape: "转位 / 省略",
+    omittedNotes: "省略：{notes}",
+    allChordTones: "包含全部和弦音"
   },
   en: {
     pageTitle: "Chord & Harmony Lab",
@@ -108,7 +120,19 @@ export const TRANSLATIONS = {
     pianoLabel: "Clickable piano keyboard",
     play: "Play",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Chord reference views",
+    toneView: "Tones",
+    guitarView: "Guitar",
+    guitarVoicingsTitle: "Guitar Voicings",
+    guitarTipLabel: "Guitar voicing note",
+    guitarTipText: "Guitar chord fingerings are generated programmatically and may include impractical or impossible shapes. Use them as reference only.",
+    guitarSummary: "{name} · {count} shapes through fret 15",
+    noGuitarVoicings: "No practical guitar voicing for this set",
+    rootBass: "Root in bass",
+    inversionShape: "Inversion / omission",
+    omittedNotes: "Omit: {notes}",
+    allChordTones: "All chord tones included"
   },
   ja: {
     pageTitle: "Chord & Harmony Lab",
@@ -158,7 +182,19 @@ export const TRANSLATIONS = {
     pianoLabel: "クリック可能なピアノ鍵盤",
     play: "再生",
     aliasLabel: "別名",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "コード参照ビュー",
+    toneView: "構成音",
+    guitarView: "ギター",
+    guitarVoicingsTitle: "ギター・ボイシング",
+    guitarTipLabel: "ギター運指の注意",
+    guitarTipText: "ギターのコード運指はプログラムで生成されています。不自然または演奏できない形が含まれる場合があるため、参考用として使用してください。",
+    guitarSummary: "{name} · 15フレット以内 {count} 種",
+    noGuitarVoicings: "この組み合わせの実用的なギター・ボイシングはありません",
+    rootBass: "ルートがベース",
+    inversionShape: "転回 / 省略",
+    omittedNotes: "省略：{notes}",
+    allChordTones: "全コードトーンを含む"
   },
   ko: {
     pageTitle: "Chord & Harmony Lab",
@@ -208,7 +244,19 @@ export const TRANSLATIONS = {
     pianoLabel: "클릭 가능한 피아노 건반",
     play: "재생",
     aliasLabel: "별칭",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "코드 참고 보기",
+    toneView: "구성음",
+    guitarView: "기타",
+    guitarVoicingsTitle: "기타 보이싱",
+    guitarTipLabel: "기타 운지 안내",
+    guitarTipText: "기타 코드 운지는 프로그램으로 생성되며, 부자연스럽거나 연주할 수 없는 형태가 포함될 수 있습니다. 참고용으로만 사용하세요.",
+    guitarSummary: "{name} · 15프렛 이내 {count}개",
+    noGuitarVoicings: "현재 조합에 맞는 실용적인 기타 보이싱이 없습니다",
+    rootBass: "근음 베이스",
+    inversionShape: "전위 / 생략",
+    omittedNotes: "생략: {notes}",
+    allChordTones: "모든 코드톤 포함"
   },
   es: {
     pageTitle: "Chord & Harmony Lab",
@@ -258,7 +306,19 @@ export const TRANSLATIONS = {
     pianoLabel: "Teclado de piano interactivo",
     play: "Reproducir",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Vistas de referencia",
+    toneView: "Notas",
+    guitarView: "Guitarra",
+    guitarVoicingsTitle: "Digitaciones de guitarra",
+    guitarTipLabel: "Aviso sobre digitaciones",
+    guitarTipText: "Las digitaciones de guitarra se generan mediante programa y pueden incluir formas poco prácticas o imposibles. Úsalas solo como referencia.",
+    guitarSummary: "{name} · {count} posiciones hasta el traste 15",
+    noGuitarVoicings: "No hay una digitación práctica para este conjunto",
+    rootBass: "Raíz en el bajo",
+    inversionShape: "Inversión / omisión",
+    omittedNotes: "Omitir: {notes}",
+    allChordTones: "Incluye todas las notas"
   },
   de: {
     pageTitle: "Chord & Harmony Lab",
@@ -308,7 +368,19 @@ export const TRANSLATIONS = {
     pianoLabel: "Klickbare Klaviertastatur",
     play: "Spielen",
     aliasLabel: "Alias",
-    selected: "selected"
+    selected: "selected",
+    analysisViews: "Akkord-Referenzansichten",
+    toneView: "Töne",
+    guitarView: "Gitarre",
+    guitarVoicingsTitle: "Gitarren-Voicings",
+    guitarTipLabel: "Hinweis zu Gitarrengriffen",
+    guitarTipText: "Gitarrenakkord-Fingersätze werden programmgesteuert erzeugt und können unpraktische oder nicht spielbare Formen enthalten. Nur als Referenz verwenden.",
+    guitarSummary: "{name} · {count} Griffe bis Bund 15",
+    noGuitarVoicings: "Keine praktische Gitarren-Voicing für diese Auswahl",
+    rootBass: "Grundton im Bass",
+    inversionShape: "Umkehrung / Auslassung",
+    omittedNotes: "Auslassen: {notes}",
+    allChordTones: "Alle Akkordtöne enthalten"
   }
 };
 
