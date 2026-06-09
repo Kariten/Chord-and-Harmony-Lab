@@ -476,28 +476,34 @@ select:disabled {
 }
 
 .detected-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .analysis-play-button {
+  flex: 0 0 auto;
   min-width: 58px;
   min-height: 30px;
   padding-inline: 12px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 950;
+  white-space: nowrap;
 }
 
 .detected-name {
   display: block;
+  flex: 1 1 auto;
   min-width: 0;
   color: #fde68a;
   font-size: 38px;
   line-height: 0.95;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .analysis-display .formula-line {
