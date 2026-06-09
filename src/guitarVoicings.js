@@ -12,7 +12,7 @@ export const STANDARD_GUITAR_TUNING = [
 const MUTE = null;
 const DEFAULT_MAX_FRET = 12;
 const DEFAULT_MAX_SPAN = 4;
-const DEFAULT_LIMIT = 48;
+const DEFAULT_LIMIT = 8;
 
 export function guitarVoicings({
   rootPc,
@@ -47,9 +47,8 @@ export function guitarVoicings({
     });
   }
 
-  return [...candidates.values()]
+  return selectVoicings([...candidates.values()], limit)
     .sort((a, b) => a.score - b.score || a.position - b.position || a.frets.join("").localeCompare(b.frets.join("")))
-    .slice(0, limit);
 }
 
 function requiredChordTones(root, chordPcs) {
@@ -129,22 +128,38 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
   const maxFret = fretNumbers.length ? Math.max(...fretNumbers) : 0;
   const span = maxFret > 0 ? maxFret - minFret : 0;
   if (span > DEFAULT_MAX_SPAN) return null;
-  if (fretted.length > 4 && !hasLikelyBarre(fretted)) return null;
 
   const bass = played[0];
   const missingPcs = chordPcs.filter((notePc) => !presentPcs.includes(notePc));
   const mutedMiddleStrings = countMutedMiddleStrings(frets);
+  if (mutedMiddleStrings > 0) return null;
+
   const openStrings = played.filter((item) => item.fret === 0).length;
-  const barre = detectBarre(fretted);
+  if (openStrings > 0 && maxFret > 4) return null;
+
+  const muteCount = frets.filter((fret) => fret === MUTE).length;
+  if (muteCount > 2) return null;
+  if (frets[4] === MUTE && frets[5] === MUTE) return null;
+
+  const barre = detectBarre(fretted, frets);
+  if (fretted.length > 4 && !barre) return null;
+  const firstRootString = played.find((item) => item.notePc === root)?.stringIndex ?? played[0].stringIndex;
+  const lowerNonRootStrings = played.filter((item) => item.stringIndex < firstRootString).length;
+
   const score =
-    missingPcs.length * 36 +
+    missingPcs.length * 64 +
+    muteCount * 12 +
+    (frets[5] === MUTE ? 18 : 0) +
+    (frets[4] === MUTE ? 8 : 0) +
+    lowerNonRootStrings * 12 +
+    (played.length <= 3 ? 12 : 0) +
     (bass.notePc === root ? 0 : 14) +
     span * 7 +
-    fretted.length * 2 +
-    mutedMiddleStrings * 8 +
-    Math.max(0, minFret - 1) * 1.5 -
-    openStrings * 1.2 -
-    (barre ? 4 : 0);
+    fretted.length * 1.8 +
+    Math.max(0, minFret - 1) * 1.1 -
+    (openStrings > 0 ? 24 : 0) -
+    openStrings * 2.4 -
+    barreScoreBonus(barre);
 
   return {
     frets: [...frets],
@@ -158,17 +173,36 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
     missingPcs,
     missingNotes: missingPcs.map((notePc) => noteName(notePc, preferFlats)),
     rootInBass: bass.notePc === root,
-    stringCount: played.length
+    stringCount: played.length,
+    muteCount
   };
 }
 
-function hasLikelyBarre(fretted) {
-  return fretted.some((note) => {
-    return fretted.filter((candidate) => candidate.fret === note.fret).length >= 2;
-  });
+function selectVoicings(candidates, limit) {
+  const ranked = candidates.sort((a, b) => a.score - b.score || a.position - b.position || a.frets.join("").localeCompare(b.frets.join("")));
+  const complete = ranked.filter((candidate) => candidate.missingPcs.length === 0);
+  const pool = complete.length >= Math.min(4, limit) ? complete : ranked;
+  const selected = [];
+  const positionCounts = new Map();
+
+  for (const candidate of pool) {
+    const count = positionCounts.get(candidate.position) ?? 0;
+    if (count >= 2) continue;
+    selected.push(candidate);
+    positionCounts.set(candidate.position, count + 1);
+    if (selected.length === limit) return selected;
+  }
+
+  for (const candidate of ranked) {
+    if (selected.includes(candidate)) continue;
+    selected.push(candidate);
+    if (selected.length === limit) return selected;
+  }
+
+  return selected;
 }
 
-function detectBarre(fretted) {
+function detectBarre(fretted, frets) {
   const byFret = new Map();
   fretted.forEach((note) => {
     const notes = byFret.get(note.fret) ?? [];
@@ -179,14 +213,30 @@ function detectBarre(fretted) {
   for (const [fret, notes] of byFret.entries()) {
     if (notes.length < 2) continue;
     const strings = notes.map((note) => note.stringIndex).sort((a, b) => a - b);
+    const fromString = strings[0];
+    const toString = strings[strings.length - 1];
+    const crossesOnlyFrettedStrings = frets.slice(fromString, toString + 1).every((candidateFret) => {
+      return candidateFret !== MUTE && candidateFret > 0 && candidateFret >= fret;
+    });
+    if (!crossesOnlyFrettedStrings) continue;
+    if (toString - fromString + 1 > 3 && fromString > 1) continue;
+
     return {
       fret,
-      fromString: strings[0],
-      toString: strings[strings.length - 1]
+      fromString,
+      toString
     };
   }
 
   return null;
+}
+
+function barreScoreBonus(barre) {
+  if (!barre) return 0;
+  const width = barre.toString - barre.fromString + 1;
+  if (barre.fromString <= 1 && width >= 4) return 10;
+  if (width <= 3) return 4;
+  return 0;
 }
 
 function assignFingers(fretted) {

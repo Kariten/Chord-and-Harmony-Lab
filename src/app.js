@@ -335,7 +335,7 @@ function renderGuitarReference(context) {
     rootPc: context.rootPc,
     pitchClasses: context.pitchClasses,
     preferFlats: context.preferFlats,
-    limit: 60
+    limit: 8
   });
 
   dom.guitarSummary.textContent = voicings.length
