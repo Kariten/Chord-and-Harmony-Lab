@@ -462,10 +462,7 @@ select:disabled {
 }
 
 .analysis-note-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
+  min-width: 0;
 }
 
 .note-row {
@@ -476,6 +473,13 @@ select:disabled {
   font-weight: 800;
   line-height: 1.15;
   overflow-wrap: anywhere;
+}
+
+.detected-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
 }
 
 .analysis-play-button {
@@ -489,6 +493,7 @@ select:disabled {
 
 .detected-name {
   display: block;
+  min-width: 0;
   color: #fde68a;
   font-size: 38px;
   line-height: 0.95;
