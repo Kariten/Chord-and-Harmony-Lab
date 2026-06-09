@@ -46,3 +46,12 @@ test("provides localized mode labels without Chinese aliases outside Chinese", (
     }
   }
 });
+
+test("shows English mode names before local names in translated mode dropdowns", () => {
+  for (const languageId of ["ja", "ko", "es", "de"]) {
+    for (const mode of MODES) {
+      const englishName = MODE_LABELS.en[mode.id].name;
+      assert.ok(modeLabel(languageId, mode).startsWith(`${englishName} / `), `${languageId} should start ${mode.id} with English name`);
+    }
+  }
+});

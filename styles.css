@@ -113,15 +113,15 @@ select {
 .control-band {
   display: grid;
   grid-template-columns:
-    minmax(74px, 0.55fr)
-    minmax(120px, 1fr)
-    minmax(210px, 1.45fr)
-    minmax(96px, 0.7fr)
-    minmax(90px, 0.66fr)
-    minmax(18px, 1fr)
-    minmax(118px, 0.82fr)
-    minmax(190px, 1.35fr)
-    minmax(98px, 0.72fr);
+    minmax(66px, 0.45fr)
+    minmax(330px, 1.35fr)
+    minmax(210px, 1.1fr)
+    minmax(96px, 0.6fr)
+    minmax(90px, 0.55fr)
+    minmax(0, 0.2fr)
+    minmax(108px, 0.65fr)
+    minmax(170px, 0.9fr)
+    minmax(90px, 0.55fr);
   gap: 8px;
   align-items: center;
   margin: 0;
@@ -704,6 +704,10 @@ select:disabled {
   .control-band {
     min-height: 86px;
     padding: 12px;
+  }
+
+  #modeSelect {
+    font-size: 15px;
   }
 
   .workspace-grid {
