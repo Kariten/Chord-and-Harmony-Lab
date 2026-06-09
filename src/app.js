@@ -14,7 +14,7 @@ import {
   scalePitchClasses
 } from "./chordEngine.js";
 import { playMidiNotes } from "./audio.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, translate } from "./i18n.js";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 
 const state = {
@@ -63,9 +63,7 @@ function init() {
   KEY_OPTIONS.forEach((key) => {
     dom.keySelect.append(new Option(key.name, String(key.pc)));
   });
-  MODES.forEach((mode) => {
-    dom.modeSelect.append(new Option(mode.name, mode.id));
-  });
+  renderModeOptions();
   LANGUAGES.forEach((language) => {
     dom.languageSelect.append(new Option(language.label, language.id));
   });
@@ -75,6 +73,7 @@ function init() {
     state.language = dom.languageSelect.value;
     localStorage.setItem("chordLabLanguage", state.language);
     applyStaticTranslations();
+    renderModeOptions();
     render();
   });
 
@@ -141,6 +140,14 @@ function applyStaticTranslations() {
   });
 }
 
+function renderModeOptions() {
+  dom.modeSelect.replaceChildren();
+  MODES.forEach((mode) => {
+    dom.modeSelect.append(new Option(modeLabel(state.language, mode), mode.id));
+  });
+  dom.modeSelect.value = state.modeId;
+}
+
 function render() {
   const key = keyByPc(state.keyPc);
   const mode = modeById(state.modeId);
@@ -148,7 +155,7 @@ function render() {
   const activeChord = chords[state.selectedDegree];
   const scaleNotes = scalePitchClasses(state.keyPc, state.modeId).map((notePc) => noteName(notePc, key.preferFlats));
 
-  dom.heroKey.textContent = `${key.name} ${mode.shortName}`;
+  dom.heroKey.textContent = `${key.name} ${modeLabel(state.language, mode, "short")}`;
   dom.heroChord.textContent = activeChord.name;
   dom.modeFormula.textContent = t("scale", { notes: scaleNotes.join("  ") });
   dom.triadButton.classList.toggle("active", state.chordSize === "triad");

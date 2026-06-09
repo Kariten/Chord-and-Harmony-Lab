@@ -371,6 +371,7 @@ select:disabled {
   display: block;
   max-width: 100%;
   min-width: 0;
+  color: var(--blue);
   font-size: 28px;
   line-height: 1;
   overflow: hidden;

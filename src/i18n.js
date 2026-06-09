@@ -56,7 +56,7 @@ export const TRANSLATIONS = {
     midiLegend: "MIDI 输入",
     rootLegend: "根音",
     pianoLabel: "可点击钢琴键盘",
-    play: "Play",
+    play: "试听",
     aliasLabel: "别名",
     selected: "selected"
   },
@@ -256,7 +256,7 @@ export const TRANSLATIONS = {
     midiLegend: "MIDI",
     rootLegend: "Raíz",
     pianoLabel: "Teclado de piano interactivo",
-    play: "Play",
+    play: "Reproducir",
     aliasLabel: "Alias",
     selected: "selected"
   },
@@ -306,9 +306,84 @@ export const TRANSLATIONS = {
     midiLegend: "MIDI",
     rootLegend: "Grundton",
     pianoLabel: "Klickbare Klaviertastatur",
-    play: "Play",
+    play: "Spielen",
     aliasLabel: "Alias",
     selected: "selected"
+  }
+};
+
+export const MODE_LABELS = {
+  "zh-CN": {
+    ionian: { name: "Ionian / 大调", short: "大调" },
+    aeolian: { name: "Aeolian / 自然小调", short: "自然小调" },
+    "harmonic-minor": { name: "Harmonic Minor / 和声小调", short: "和声小调" },
+    "melodic-minor": { name: "Melodic Minor / 旋律小调", short: "旋律小调" },
+    dorian: { name: "Dorian / 多利亚", short: "多利亚" },
+    phrygian: { name: "Phrygian / 弗里几亚", short: "弗里几亚" },
+    lydian: { name: "Lydian / 利底亚", short: "利底亚" },
+    mixolydian: { name: "Mixolydian / 混合利底亚", short: "混合利底亚" },
+    locrian: { name: "Locrian / 洛克里亚", short: "洛克里亚" },
+    "harmonic-major": { name: "Harmonic Major / 和声大调", short: "和声大调" }
+  },
+  en: {
+    ionian: { name: "Ionian", short: "Ionian" },
+    aeolian: { name: "Aeolian", short: "Aeolian" },
+    "harmonic-minor": { name: "Harmonic Minor", short: "Harmonic minor" },
+    "melodic-minor": { name: "Melodic Minor", short: "Melodic minor" },
+    dorian: { name: "Dorian", short: "Dorian" },
+    phrygian: { name: "Phrygian", short: "Phrygian" },
+    lydian: { name: "Lydian", short: "Lydian" },
+    mixolydian: { name: "Mixolydian", short: "Mixolydian" },
+    locrian: { name: "Locrian", short: "Locrian" },
+    "harmonic-major": { name: "Harmonic Major", short: "Harmonic major" }
+  },
+  ja: {
+    ionian: { name: "アイオニアン", short: "アイオニアン" },
+    aeolian: { name: "エオリアン", short: "エオリアン" },
+    "harmonic-minor": { name: "ハーモニック・マイナー", short: "ハーモニック・マイナー" },
+    "melodic-minor": { name: "メロディック・マイナー", short: "メロディック・マイナー" },
+    dorian: { name: "ドリアン", short: "ドリアン" },
+    phrygian: { name: "フリジアン", short: "フリジアン" },
+    lydian: { name: "リディアン", short: "リディアン" },
+    mixolydian: { name: "ミクソリディアン", short: "ミクソリディアン" },
+    locrian: { name: "ロクリアン", short: "ロクリアン" },
+    "harmonic-major": { name: "ハーモニック・メジャー", short: "ハーモニック・メジャー" }
+  },
+  ko: {
+    ionian: { name: "아이오니안", short: "아이오니안" },
+    aeolian: { name: "에올리안", short: "에올리안" },
+    "harmonic-minor": { name: "화성 단음계", short: "화성 단음계" },
+    "melodic-minor": { name: "가락 단음계", short: "가락 단음계" },
+    dorian: { name: "도리안", short: "도리안" },
+    phrygian: { name: "프리지안", short: "프리지안" },
+    lydian: { name: "리디안", short: "리디안" },
+    mixolydian: { name: "믹솔리디안", short: "믹솔리디안" },
+    locrian: { name: "로크리안", short: "로크리안" },
+    "harmonic-major": { name: "화성 장음계", short: "화성 장음계" }
+  },
+  es: {
+    ionian: { name: "Jónico", short: "Jónico" },
+    aeolian: { name: "Eólico", short: "Eólico" },
+    "harmonic-minor": { name: "Menor armónica", short: "Menor armónica" },
+    "melodic-minor": { name: "Menor melódica", short: "Menor melódica" },
+    dorian: { name: "Dórico", short: "Dórico" },
+    phrygian: { name: "Frigio", short: "Frigio" },
+    lydian: { name: "Lidio", short: "Lidio" },
+    mixolydian: { name: "Mixolidio", short: "Mixolidio" },
+    locrian: { name: "Locrio", short: "Locrio" },
+    "harmonic-major": { name: "Mayor armónica", short: "Mayor armónica" }
+  },
+  de: {
+    ionian: { name: "Ionisch", short: "Ionisch" },
+    aeolian: { name: "Äolisch", short: "Äolisch" },
+    "harmonic-minor": { name: "Harmonisch Moll", short: "Harmonisch Moll" },
+    "melodic-minor": { name: "Melodisch Moll", short: "Melodisch Moll" },
+    dorian: { name: "Dorisch", short: "Dorisch" },
+    phrygian: { name: "Phrygisch", short: "Phrygisch" },
+    lydian: { name: "Lydisch", short: "Lydisch" },
+    mixolydian: { name: "Mixolydisch", short: "Mixolydisch" },
+    locrian: { name: "Lokrisch", short: "Lokrisch" },
+    "harmonic-major": { name: "Harmonisch Dur", short: "Harmonisch Dur" }
   }
 };
 
@@ -319,4 +394,9 @@ export function translate(language, key, values = {}) {
   return Object.entries(values).reduce((text, [name, value]) => {
     return text.replaceAll(`{${name}}`, value);
   }, template);
+}
+
+export function modeLabel(language, mode, variant = "name") {
+  const labels = MODE_LABELS[language] ?? MODE_LABELS[DEFAULT_LANGUAGE];
+  return labels[mode.id]?.[variant] ?? mode[variant === "short" ? "shortName" : "name"];
 }
