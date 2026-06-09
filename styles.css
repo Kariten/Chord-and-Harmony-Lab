@@ -566,16 +566,17 @@ select:disabled {
 }
 
 .info-tip-button {
+  box-sizing: border-box;
   display: inline-grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
   color: var(--blue);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 950;
   line-height: 1;
   cursor: pointer;
@@ -591,20 +592,26 @@ select:disabled {
 }
 
 .info-tip-bubble {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  right: 0;
-  width: min(360px, calc(100vw - 40px));
-  padding: 10px 12px;
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 100;
+  top: var(--tip-top, 120px);
+  left: var(--tip-left, 12px);
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(50vh, 240px);
+  padding: 14px 16px;
   border: 1px solid #bfdbfe;
   border-radius: 8px;
   background: #ffffff;
   color: #334155;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  line-height: 1.38;
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  line-height: 1.52;
+  white-space: normal;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.22);
   opacity: 0;
   transform: translateY(-4px);
   visibility: hidden;
@@ -1122,8 +1129,7 @@ select:disabled {
   }
 
   .info-tip-bubble {
-    right: auto;
-    left: 0;
+    width: min(520px, calc(100vw - 24px));
   }
 
   .piano {

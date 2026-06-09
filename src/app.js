@@ -47,6 +47,7 @@ const dom = {
   toneView: document.querySelector("#toneView"),
   guitarView: document.querySelector("#guitarView"),
   guitarTipButton: document.querySelector("#guitarTipButton"),
+  guitarTipBubble: document.querySelector("#guitarTipBubble"),
   playSelected: document.querySelector("#playSelected"),
   midiEnable: document.querySelector("#midiEnable"),
   midiInputSelect: document.querySelector("#midiInputSelect"),
@@ -115,12 +116,17 @@ function init() {
   dom.guitarViewButton.addEventListener("click", () => setAnalysisView("guitar"));
   dom.guitarTipButton.addEventListener("click", (event) => {
     event.stopPropagation();
+    positionGuitarTip();
     setGuitarTipOpen(dom.guitarTipButton.getAttribute("aria-expanded") !== "true");
   });
+  dom.guitarTipButton.addEventListener("pointerenter", positionGuitarTip);
+  dom.guitarTipButton.addEventListener("focus", positionGuitarTip);
   document.addEventListener("click", () => setGuitarTipOpen(false));
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") setGuitarTipOpen(false);
   });
+  window.addEventListener("scroll", positionGuitarTip, { passive: true });
+  dom.guitarView.addEventListener("scroll", positionGuitarTip, { passive: true });
   dom.playSelected.addEventListener("click", playActiveSound);
   dom.midiEnable.addEventListener("click", enableMidi);
   dom.midiInputSelect.addEventListener("change", () => {
@@ -131,7 +137,10 @@ function init() {
     state.midiActiveMidis.clear();
     render();
   });
-  window.addEventListener("resize", scheduleFitDegreeNames);
+  window.addEventListener("resize", () => {
+    scheduleFitDegreeNames();
+    positionGuitarTip();
+  });
 
   renderPiano();
   applyStaticTranslations();
@@ -196,7 +205,21 @@ function setAnalysisView(view) {
 }
 
 function setGuitarTipOpen(open) {
+  if (open) positionGuitarTip();
   dom.guitarTipButton.setAttribute("aria-expanded", String(open));
+}
+
+function positionGuitarTip() {
+  const rect = dom.guitarTipButton.getBoundingClientRect();
+  const bubble = dom.guitarTipBubble;
+  const margin = 12;
+  const top = rect.bottom + 8;
+  const width = bubble.offsetWidth || Math.min(560, window.innerWidth - margin * 2);
+  const preferredLeft = rect.right - width;
+  const left = Math.min(Math.max(margin, preferredLeft), window.innerWidth - width - margin);
+
+  bubble.style.setProperty("--tip-left", `${left}px`);
+  bubble.style.setProperty("--tip-top", `${top}px`);
 }
 
 function renderAnalysisTabs() {
