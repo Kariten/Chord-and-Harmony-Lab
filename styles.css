@@ -596,33 +596,37 @@ select:disabled {
 
 .guitar-diagram {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 22px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: auto auto;
   gap: 4px 7px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .guitar-string-status {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, 1fr);
   grid-column: 1;
-  min-height: 16px;
+  grid-row: 1;
+  min-height: 142px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 950;
   text-align: center;
   text-transform: uppercase;
+  align-items: center;
 }
 
 .guitar-fretboard {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  grid-column: 1;
-  min-height: 136px;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 142px;
   border: 2px solid #111827;
   border-radius: 6px;
-  background: linear-gradient(180deg, #fffaf0, #f8fafc);
+  background: linear-gradient(90deg, #fffaf0, #f8fafc);
   overflow: hidden;
 }
 
@@ -634,20 +638,20 @@ select:disabled {
 }
 
 .guitar-string-line {
-  top: 0;
-  bottom: 0;
-  left: var(--string-left);
-  width: 2px;
-  transform: translateX(-1px);
+  left: 0;
+  right: 0;
+  top: var(--string-top);
+  height: 2px;
+  transform: translateY(-1px);
   background: rgba(15, 23, 42, 0.46);
 }
 
 .guitar-fret-line {
-  left: 0;
-  right: 0;
-  top: var(--fret-top);
-  height: 2px;
-  transform: translateY(-1px);
+  top: 0;
+  bottom: 0;
+  left: var(--fret-left);
+  width: 2px;
+  transform: translateX(-1px);
   background: rgba(15, 23, 42, 0.34);
 }
 
@@ -669,7 +673,8 @@ select:disabled {
 
 .guitar-barre {
   z-index: 2;
-  width: calc(100% - 8px);
+  width: 24px;
+  height: calc(100% - 8px);
   min-height: 24px;
   border-radius: 999px;
   background: #0f172a;
@@ -677,8 +682,10 @@ select:disabled {
 
 .guitar-position {
   grid-column: 2;
-  align-self: start;
-  padding-top: 22px;
+  grid-row: 2;
+  justify-self: start;
+  align-self: center;
+  min-height: 14px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 950;

@@ -372,9 +372,11 @@ function createGuitarDiagram(voicing, index) {
 
   const status = document.createElement("div");
   status.className = "guitar-string-status";
-  voicing.frets.forEach((fret) => {
+  displayStringIndexes().forEach((stringIndex) => {
+    const fret = voicing.frets[stringIndex];
     const item = document.createElement("span");
     item.textContent = fret === null ? "x" : fret === 0 ? "o" : "";
+    item.title = STANDARD_GUITAR_TUNING[stringIndex].name;
     status.append(item);
   });
 
@@ -383,10 +385,11 @@ function createGuitarDiagram(voicing, index) {
   fretboard.className = "guitar-fretboard";
   fretboard.setAttribute("aria-label", `${voicing.label} ${voicing.frets.map((fret) => fret ?? "x").join(" ")}`);
 
-  STANDARD_GUITAR_TUNING.forEach((string, stringIndex) => {
+  displayStringIndexes().forEach((stringIndex, displayIndex) => {
+    const string = STANDARD_GUITAR_TUNING[stringIndex];
     const line = document.createElement("span");
     line.className = "guitar-string-line";
-    line.style.setProperty("--string-left", `${((stringIndex + 0.5) / STANDARD_GUITAR_TUNING.length) * 100}%`);
+    line.style.setProperty("--string-top", `${((displayIndex + 0.5) / STANDARD_GUITAR_TUNING.length) * 100}%`);
     line.title = string.name;
     fretboard.append(line);
   });
@@ -394,39 +397,48 @@ function createGuitarDiagram(voicing, index) {
   for (let fretIndex = 0; fretIndex <= 5; fretIndex += 1) {
     const line = document.createElement("span");
     line.className = "guitar-fret-line";
-    line.style.setProperty("--fret-top", `${(fretIndex / 5) * 100}%`);
+    line.style.setProperty("--fret-left", `${(fretIndex / 5) * 100}%`);
     fretboard.append(line);
   }
 
   voicing.frets.forEach((fret, stringIndex) => {
     if (!fret) return;
-    const row = fret - displayStart + 1;
-    if (row < 1 || row > 5) return;
+    const column = fret - displayStart + 1;
+    if (column < 1 || column > 5) return;
     const marker = document.createElement("span");
     marker.className = "guitar-marker";
-    marker.style.gridColumn = String(stringIndex + 1);
-    marker.style.gridRow = String(row);
+    marker.style.gridColumn = String(column);
+    marker.style.gridRow = String(displayRowForString(stringIndex));
     marker.textContent = voicing.fingers[stringIndex] ?? "";
     fretboard.append(marker);
   });
 
   voicing.barres.forEach((barre) => {
-    const row = barre.fret - displayStart + 1;
-    if (row < 1 || row > 5) return;
+    const column = barre.fret - displayStart + 1;
+    if (column < 1 || column > 5) return;
+    const rows = [displayRowForString(barre.fromString), displayRowForString(barre.toString)].sort((a, b) => a - b);
     const marker = document.createElement("span");
     marker.className = "guitar-barre";
-    marker.style.gridColumn = `${barre.fromString + 1} / ${barre.toString + 2}`;
-    marker.style.gridRow = String(row);
+    marker.style.gridColumn = String(column);
+    marker.style.gridRow = `${rows[0]} / ${rows[1] + 1}`;
     marker.textContent = "1";
     fretboard.append(marker);
   });
 
   const position = document.createElement("span");
   position.className = "guitar-position";
-  position.textContent = voicing.position === 1 ? "" : String(displayStart);
+  position.textContent = `${displayStart}fr`;
 
   diagram.append(status, fretboard, position);
   return diagram;
+}
+
+function displayStringIndexes() {
+  return STANDARD_GUITAR_TUNING.map((_, index) => index).reverse();
+}
+
+function displayRowForString(stringIndex) {
+  return STANDARD_GUITAR_TUNING.length - stringIndex;
 }
 
 function renderPiano() {
