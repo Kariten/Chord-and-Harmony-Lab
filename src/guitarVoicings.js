@@ -48,7 +48,7 @@ export function guitarVoicings({
   }
 
   return selectVoicings([...candidates.values()], limit)
-    .sort((a, b) => a.score - b.score || a.position - b.position || a.frets.join("").localeCompare(b.frets.join("")))
+    .sort((a, b) => a.score - b.score || a.position - b.position || a.frets.join("").localeCompare(b.frets.join("")));
 }
 
 function requiredChordTones(root, chordPcs) {
@@ -141,8 +141,8 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
   if (muteCount > 2) return null;
   if (frets[4] === MUTE && frets[5] === MUTE) return null;
 
-  const barre = detectBarre(fretted, frets);
-  if (fretted.length > 4 && !barre) return null;
+  const fingering = buildFingering(fretted, frets);
+  if (!fingering) return null;
   const firstRootString = played.find((item) => item.notePc === root)?.stringIndex ?? played[0].stringIndex;
   const lowerNonRootStrings = played.filter((item) => item.stringIndex < firstRootString).length;
 
@@ -159,14 +159,16 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
     Math.max(0, minFret - 1) * 1.1 -
     (openStrings > 0 ? 24 : 0) -
     openStrings * 2.4 -
-    barreScoreBonus(barre);
+    barreScoreBonus(fingering.barres[0]);
+
+  const displayPosition = openStrings > 0 && maxFret <= 3 ? 1 : minFret === 0 ? 1 : minFret;
 
   return {
     frets: [...frets],
-    fingers: assignFingers(fretted),
-    barres: barre ? [barre] : [],
-    position: minFret === 0 ? 1 : minFret,
-    label: minFret === 0 ? "Open" : `Fret ${minFret}`,
+    fingers: fingering.fingers,
+    barres: fingering.barres,
+    position: displayPosition,
+    label: displayPosition === 1 && openStrings > 0 ? "Open" : `Fret ${displayPosition}`,
     score,
     notes: played.map((item) => item.note),
     notePcs: presentPcs,
@@ -202,8 +204,46 @@ function selectVoicings(candidates, limit) {
   return selected;
 }
 
-function detectBarre(fretted, frets) {
+function buildFingering(fretted, frets) {
+  const usableBarres = detectUsableBarres(fretted, frets);
+  const plans = [{ fingers: assignDistinctFingers(fretted), barres: [] }];
+  usableBarres.forEach((barre) => {
+    const remaining = fretted.filter((note) => {
+      return note.stringIndex < barre.fromString || note.stringIndex > barre.toString || note.fret !== barre.fret;
+    });
+    const fingers = assignDistinctFingers(remaining, 2);
+    if (!fingers) return;
+    for (let stringIndex = barre.fromString; stringIndex <= barre.toString; stringIndex += 1) {
+      if (frets[stringIndex] === barre.fret) {
+        fingers[stringIndex] = 1;
+      }
+    }
+    plans.push({ fingers, barres: [barre] });
+  });
+
+  return plans
+    .filter((plan) => plan.fingers)
+    .sort((a, b) => fingeringCost(a, fretted) - fingeringCost(b, fretted))[0] ?? null;
+}
+
+function assignDistinctFingers(fretted, firstFinger = 1) {
+  if (fretted.length > 5 - firstFinger) return null;
+  const sorted = [...fretted].sort((a, b) => a.fret - b.fret || a.stringIndex - b.stringIndex);
+  return sorted.reduce((map, note, index) => {
+    map[note.stringIndex] = firstFinger + index;
+    return map;
+  }, {});
+}
+
+function fingeringCost(plan, fretted) {
+  const fingerCount = new Set(Object.values(plan.fingers)).size;
+  const repeatedFingerCost = Object.values(plan.fingers).length - fingerCount;
+  return plan.barres.length * 5 + repeatedFingerCost * 20 + fingerCount;
+}
+
+function detectUsableBarres(fretted, frets) {
   const byFret = new Map();
+  const barres = [];
   fretted.forEach((note) => {
     const notes = byFret.get(note.fret) ?? [];
     notes.push(note);
@@ -221,14 +261,17 @@ function detectBarre(fretted, frets) {
     if (!crossesOnlyFrettedStrings) continue;
     if (toString - fromString + 1 > 3 && fromString > 1) continue;
 
-    return {
+    const barre = {
       fret,
       fromString,
       toString
     };
+    if (shouldUseBarre(barre, fretted)) {
+      barres.push(barre);
+    }
   }
 
-  return null;
+  return barres;
 }
 
 function barreScoreBonus(barre) {
@@ -239,13 +282,11 @@ function barreScoreBonus(barre) {
   return 0;
 }
 
-function assignFingers(fretted) {
-  const uniqueFrets = [...new Set(fretted.map((note) => note.fret))].sort((a, b) => a - b);
-  const fingerByFret = new Map(uniqueFrets.map((fret, index) => [fret, Math.min(index + 1, 4)]));
-  return fretted.reduce((map, note) => {
-    map[note.stringIndex] = fingerByFret.get(note.fret);
-    return map;
-  }, {});
+function shouldUseBarre(barre, fretted) {
+  const width = barre.toString - barre.fromString + 1;
+  if (fretted.length > 4) return true;
+  if (barre.fromString <= 1 && width >= 4) return true;
+  return width <= 3 && fretted.length > 4;
 }
 
 function countMutedMiddleStrings(frets) {

@@ -380,9 +380,10 @@ function createGuitarDiagram(voicing, index) {
     status.append(item);
   });
 
-  const displayStart = voicing.position === 1 ? 1 : voicing.position;
+  const displayStart = guitarDisplayStart(voicing);
   const fretboard = document.createElement("div");
   fretboard.className = "guitar-fretboard";
+  fretboard.classList.toggle("nut-position", displayStart === 1);
   fretboard.setAttribute("aria-label", `${voicing.label} ${voicing.frets.map((fret) => fret ?? "x").join(" ")}`);
 
   displayStringIndexes().forEach((stringIndex, displayIndex) => {
@@ -427,7 +428,7 @@ function createGuitarDiagram(voicing, index) {
 
   const position = document.createElement("span");
   position.className = "guitar-position";
-  position.textContent = `${displayStart}fr`;
+  position.textContent = displayStart === 1 ? "" : `${displayStart}fr`;
 
   diagram.append(status, fretboard, position);
   return diagram;
@@ -439,6 +440,12 @@ function displayStringIndexes() {
 
 function displayRowForString(stringIndex) {
   return STANDARD_GUITAR_TUNING.length - stringIndex;
+}
+
+function guitarDisplayStart(voicing) {
+  const fretted = voicing.frets.filter((fret) => fret > 0);
+  if (fretted.length === 0 || Math.max(...fretted) <= 3) return 1;
+  return voicing.position === 1 ? 1 : voicing.position;
 }
 
 function renderPiano() {

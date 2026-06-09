@@ -81,6 +81,38 @@ test("filters awkward mute and barre shapes", () => {
   }
 });
 
+test("does not reuse one finger on different strings unless a barre is used", () => {
+  const samples = [
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7] }),
+    ...guitarVoicings({ rootPc: 9, pitchClasses: [9, 1, 4] }),
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7, 11] }),
+    ...guitarVoicings({ rootPc: 7, pitchClasses: [7, 11, 2, 5] })
+  ];
+
+  assert.ok(samples.length > 0);
+  for (const voicing of samples) {
+    const barreStrings = new Set();
+    voicing.barres.forEach((barre) => {
+      for (let stringIndex = barre.fromString; stringIndex <= barre.toString; stringIndex += 1) {
+        barreStrings.add(stringIndex);
+      }
+    });
+    const nonBarreFingers = Object.entries(voicing.fingers)
+      .filter(([stringIndex]) => !barreStrings.has(Number(stringIndex)))
+      .map(([, finger]) => finger);
+    assert.equal(new Set(nonBarreFingers).size, nonBarreFingers.length);
+    assert.ok(nonBarreFingers.every((finger) => finger >= 1 && finger <= 4));
+  }
+});
+
+test("uses separate fingers instead of unnecessary same-fret barres", () => {
+  const aMajor = guitarVoicings({ rootPc: 9, pitchClasses: [9, 1, 4] })[0];
+
+  assert.deepEqual(aMajor.frets, [null, 0, 2, 2, 2, 0]);
+  assert.equal(aMajor.barres.length, 0);
+  assert.deepEqual([aMajor.fingers[2], aMajor.fingers[3], aMajor.fingers[4]], [1, 2, 3]);
+});
+
 function hasInternalMute(frets) {
   const playedIndexes = frets
     .map((fret, index) => (fret === null ? null : index))

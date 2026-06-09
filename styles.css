@@ -630,6 +630,10 @@ select:disabled {
   overflow: hidden;
 }
 
+.guitar-fretboard.nut-position {
+  border-left-width: 7px;
+}
+
 .guitar-string-line,
 .guitar-fret-line {
   position: absolute;
