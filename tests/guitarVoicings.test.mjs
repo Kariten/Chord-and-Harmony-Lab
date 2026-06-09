@@ -126,6 +126,18 @@ test("uses separate fingers instead of unnecessary same-fret barres", () => {
   assert.deepEqual([aMajor.fingers[2], aMajor.fingers[3], aMajor.fingers[4]], [1, 2, 3]);
 });
 
+test("prioritizes low-string power chord shapes with muted treble strings", () => {
+  const cFive = guitarVoicings({ rootPc: 0, pitchClasses: [0, 7] });
+  const eFive = guitarVoicings({ rootPc: 4, pitchClasses: [4, 11] });
+  const aFive = guitarVoicings({ rootPc: 9, pitchClasses: [9, 4] });
+
+  assert.deepEqual(cFive[0].frets, [null, 3, 5, 5, null, null]);
+  assert.ok(cFive.some((voicing) => sameShape(voicing.frets, [8, 10, 10, null, null, null])));
+  assert.deepEqual(eFive[0].frets, [0, 2, 2, null, null, null]);
+  assert.deepEqual(aFive[0].frets, [null, 0, 2, 2, null, null]);
+  assert.ok([cFive, eFive, aFive].flat().every((voicing) => voicing.muteCount <= 3));
+});
+
 function hasInternalMute(frets) {
   const playedIndexes = frets
     .map((fret, index) => (fret === null ? null : index))
@@ -137,4 +149,8 @@ function hasInternalMute(frets) {
 
 function barreCrossesOpenOrMutedString(frets, barre) {
   return frets.slice(barre.fromString, barre.toString + 1).some((fret) => fret === null || fret === 0 || fret < barre.fret);
+}
+
+function sameShape(actual, expected) {
+  return actual.every((fret, index) => fret === expected[index]);
 }

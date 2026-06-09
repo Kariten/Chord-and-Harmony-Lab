@@ -101,6 +101,7 @@ function collectCandidates(options, visit, index = 0, frets = []) {
 }
 
 function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
+  const powerChord = isPowerChord(root, chordPcs);
   const played = frets
     .map((fret, stringIndex) => {
       if (fret === MUTE) return null;
@@ -138,8 +139,9 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
   if (openStrings > 0 && maxFret > 4) return null;
 
   const muteCount = frets.filter((fret) => fret === MUTE).length;
-  if (muteCount > 2) return null;
-  if (frets[4] === MUTE && frets[5] === MUTE) return null;
+  const maxMuteCount = powerChord ? 3 : 2;
+  if (muteCount > maxMuteCount) return null;
+  if (!powerChord && frets[4] === MUTE && frets[5] === MUTE) return null;
 
   const fingering = buildFingering(fretted, frets);
   if (!fingering) return null;
@@ -159,7 +161,8 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
     Math.max(0, minFret - 1) * 1.1 -
     (openStrings > 0 ? 24 : 0) -
     openStrings * 2.4 -
-    barreScoreBonus(fingering.barres[0]);
+    barreScoreBonus(fingering.barres[0]) +
+    (powerChord ? powerChordScoreAdjustment(frets, played, root) : 0);
 
   const displayPosition = openStrings > 0 && maxFret <= 3 ? 1 : minFret === 0 ? 1 : minFret;
 
@@ -178,6 +181,39 @@ function buildCandidate(frets, root, chordPcs, requiredPcs, preferFlats) {
     stringCount: played.length,
     muteCount
   };
+}
+
+function isPowerChord(root, chordPcs) {
+  return chordPcs.length === 2 && chordPcs.includes(root) && chordPcs.includes(pc(root + 7));
+}
+
+function powerChordScoreAdjustment(frets, played, root) {
+  const playedStrings = played.map((item) => item.stringIndex);
+  const firstString = Math.min(...playedStrings);
+  const lastString = Math.max(...playedStrings);
+  const trebleStringsMuted = lastString <= 3 && frets.slice(lastString + 1).every((fret) => fret === MUTE);
+  const contiguousPlayed = lastString - firstString + 1 === played.length;
+  const bass = played[0];
+  const rootFifthRoot = played.length === 3
+    && bass.notePc === root
+    && played[1].notePc === pc(root + 7)
+    && played[2].notePc === root;
+
+  let adjustment = 0;
+  if (rootFifthRoot && contiguousPlayed && firstString <= 2) adjustment -= 76;
+  if (rootFifthRoot && contiguousPlayed && firstString > 2) adjustment -= 20;
+  if (trebleStringsMuted) adjustment -= 24;
+  if (played.length === 3) adjustment -= 18;
+  if (bass.notePc === root) adjustment -= 18;
+  if (firstString === 0) adjustment -= 22;
+  if (firstString === 1) adjustment -= 18;
+  if (firstString === 2) adjustment -= 6;
+  if (firstString >= 3) adjustment += 42;
+  if (lastString > 3) adjustment += 36;
+  if (played.length > 3) adjustment += (played.length - 3) * 28;
+  if (!trebleStringsMuted && played.length > 3) adjustment += 18;
+
+  return adjustment;
 }
 
 function selectVoicings(candidates, limit) {
