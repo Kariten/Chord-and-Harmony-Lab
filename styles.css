@@ -556,6 +556,70 @@ select:disabled {
   margin-bottom: 0;
 }
 
+.guitar-title-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-width: 0;
+}
+
+.info-tip-button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-tip-button:hover,
+.info-tip-button:focus-visible,
+.info-tip-button[aria-expanded="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #ffffff;
+  outline: none;
+}
+
+.info-tip-bubble {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 40px));
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.38;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.guitar-title-row:hover .info-tip-bubble,
+.info-tip-button:focus-visible + .info-tip-bubble,
+.info-tip-button[aria-expanded="true"] + .info-tip-bubble {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
 .guitar-voicing-list {
   display: grid;
   gap: 8px;
@@ -1055,6 +1119,11 @@ select:disabled {
 
   .analysis-panel {
     grid-column: 1 / -1;
+  }
+
+  .info-tip-bubble {
+    right: auto;
+    left: 0;
   }
 
   .piano {

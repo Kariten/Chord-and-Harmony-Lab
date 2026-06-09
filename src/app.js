@@ -46,6 +46,7 @@ const dom = {
   guitarViewButton: document.querySelector("#guitarViewButton"),
   toneView: document.querySelector("#toneView"),
   guitarView: document.querySelector("#guitarView"),
+  guitarTipButton: document.querySelector("#guitarTipButton"),
   playSelected: document.querySelector("#playSelected"),
   midiEnable: document.querySelector("#midiEnable"),
   midiInputSelect: document.querySelector("#midiInputSelect"),
@@ -112,6 +113,14 @@ function init() {
   dom.playProgression.addEventListener("click", playProgression);
   dom.toneViewButton.addEventListener("click", () => setAnalysisView("tones"));
   dom.guitarViewButton.addEventListener("click", () => setAnalysisView("guitar"));
+  dom.guitarTipButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setGuitarTipOpen(dom.guitarTipButton.getAttribute("aria-expanded") !== "true");
+  });
+  document.addEventListener("click", () => setGuitarTipOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setGuitarTipOpen(false);
+  });
   dom.playSelected.addEventListener("click", playActiveSound);
   dom.midiEnable.addEventListener("click", enableMidi);
   dom.midiInputSelect.addEventListener("change", () => {
@@ -182,7 +191,12 @@ function render() {
 
 function setAnalysisView(view) {
   state.analysisView = view;
+  setGuitarTipOpen(false);
   renderAnalysisTabs();
+}
+
+function setGuitarTipOpen(open) {
+  dom.guitarTipButton.setAttribute("aria-expanded", String(open));
 }
 
 function renderAnalysisTabs() {

@@ -87,7 +87,11 @@
           </div>
           <div id="guitarView" class="analysis-scroll analysis-view guitar-view" role="tabpanel" aria-labelledby="guitarViewButton" hidden>
             <div class="guitar-summary">
-              <h3 data-i18n="guitarVoicingsTitle">吉他指法参考</h3>
+              <div class="guitar-title-row">
+                <h3 data-i18n="guitarVoicingsTitle">吉他指法参考</h3>
+                <button id="guitarTipButton" class="info-tip-button" type="button" aria-expanded="false" aria-describedby="guitarTipBubble" aria-label="吉他指法提示" data-i18n-attr="aria-label:guitarTipLabel">i</button>
+                <span id="guitarTipBubble" class="info-tip-bubble" role="tooltip" data-i18n="guitarTipText">吉他和弦指法由程序生成，可能存在不合理/无法实现的指法，仅供参考</span>
+              </div>
               <p id="guitarSummary" class="formula-line"></p>
             </div>
             <div id="guitarVoicingList" class="guitar-voicing-list"></div>
