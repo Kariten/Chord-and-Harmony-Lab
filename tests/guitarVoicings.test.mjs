@@ -153,6 +153,21 @@ test("keeps fretting fingers ordered from index finger to pinky", () => {
   }
 });
 
+test("does not place the pinky on the sixth string", () => {
+  const samples = [
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7] }),
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 4, 7, 11] }),
+    ...guitarVoicings({ rootPc: 7, pitchClasses: [7, 11, 2, 5] }),
+    ...guitarVoicings({ rootPc: 0, pitchClasses: [0, 7] }),
+    ...guitarVoicings({ rootPc: 11, pitchClasses: [11, 3, 6, 9, 1] })
+  ];
+
+  assert.ok(samples.length > 0);
+  for (const voicing of samples) {
+    assert.notEqual(voicing.fingers[0], 4, JSON.stringify(voicing.frets));
+  }
+});
+
 function hasInternalMute(frets) {
   const playedIndexes = frets
     .map((fret, index) => (fret === null ? null : index))

@@ -279,6 +279,7 @@ function fingeringCost(plan, fretted) {
 }
 
 function hasOrderedFingerFrets(fingers, frets) {
+  if (fingers[0] === 4) return false;
   const fingerFrets = new Map();
 
   for (const [stringIndex, finger] of Object.entries(fingers)) {
