@@ -155,7 +155,7 @@ function render() {
   const activeChord = chords[state.selectedDegree];
   const scaleNotes = scalePitchClasses(state.keyPc, state.modeId).map((notePc) => noteName(notePc, key.preferFlats));
 
-  dom.heroKey.textContent = `${key.name} ${modeLabel(state.language, mode, "short")}`;
+  dom.heroKey.textContent = `${key.name} ${mode.shortName}`;
   dom.heroChord.textContent = activeChord.name;
   dom.modeFormula.textContent = t("scale", { notes: scaleNotes.join("  ") });
   dom.triadButton.classList.toggle("active", state.chordSize === "triad");
