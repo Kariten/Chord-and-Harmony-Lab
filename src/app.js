@@ -31,7 +31,8 @@ const state = {
   midiActiveMidis: new Set(),
   midiEnabled: false,
   midiStatus: "",
-  analysisView: "tones"
+  analysisView: "tones",
+  guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false"
 };
 
 const dom = {
@@ -42,6 +43,8 @@ const dom = {
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
   clearSelection: document.querySelector("#clearSelection"),
+  guitarToggle: document.querySelector("#guitarToggle"),
+  analysisTabs: document.querySelector(".analysis-tabs"),
   toneViewButton: document.querySelector("#toneViewButton"),
   guitarViewButton: document.querySelector("#guitarViewButton"),
   toneView: document.querySelector("#toneView"),
@@ -114,6 +117,12 @@ function init() {
   dom.playProgression.addEventListener("click", playProgression);
   dom.toneViewButton.addEventListener("click", () => setAnalysisView("tones"));
   dom.guitarViewButton.addEventListener("click", () => setAnalysisView("guitar"));
+  dom.guitarToggle.addEventListener("change", () => {
+    state.guitarEnabled = dom.guitarToggle.checked;
+    localStorage.setItem("chordLabGuitarEnabled", String(state.guitarEnabled));
+    if (!state.guitarEnabled) state.analysisView = "tones";
+    render();
+  });
   dom.guitarTipButton.addEventListener("click", (event) => {
     event.stopPropagation();
     positionGuitarTip();
@@ -189,6 +198,7 @@ function render() {
   dom.seventhButton.classList.toggle("active", state.chordSize === "seventh");
   dom.keySelect.value = String(state.keyPc);
   dom.modeSelect.value = state.modeId;
+  dom.guitarToggle.checked = state.guitarEnabled;
 
   renderMidiControls();
   renderAnalysisTabs();
@@ -291,6 +301,7 @@ function samePitchClassSet(a, b) {
 }
 
 function setAnalysisView(view) {
+  if (view === "guitar" && !state.guitarEnabled) return;
   state.analysisView = view;
   setGuitarTipOpen(false);
   renderAnalysisTabs();
@@ -315,8 +326,14 @@ function positionGuitarTip() {
 }
 
 function renderAnalysisTabs() {
-  const showGuitar = state.analysisView === "guitar";
+  if (!state.guitarEnabled && state.analysisView === "guitar") {
+    state.analysisView = "tones";
+  }
+
+  const showGuitar = state.guitarEnabled && state.analysisView === "guitar";
+  dom.analysisTabs.hidden = !state.guitarEnabled;
   dom.toneViewButton.classList.toggle("active", !showGuitar);
+  dom.guitarViewButton.hidden = !state.guitarEnabled;
   dom.guitarViewButton.classList.toggle("active", showGuitar);
   dom.toneViewButton.setAttribute("aria-selected", String(!showGuitar));
   dom.guitarViewButton.setAttribute("aria-selected", String(showGuitar));
@@ -457,6 +474,8 @@ function renderToneMap(rootPc, pitchClasses, preferFlats) {
 }
 
 function renderGuitarReference(context) {
+  if (!state.guitarEnabled) return;
+
   dom.guitarVoicingList.replaceChildren();
   if (!context) {
     dom.guitarSummary.textContent = t("noGuitarVoicings");

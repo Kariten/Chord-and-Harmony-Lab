@@ -40,7 +40,7 @@ select {
 
 .app-shell {
   display: grid;
-  grid-template-rows: 126px 92px minmax(0, 1fr) clamp(280px, 30vh, 350px);
+  grid-template-rows: 126px 74px minmax(0, 1fr) clamp(280px, 30vh, 350px);
   gap: 10px;
   width: min(calc(100vw - 20px), 1920px);
   height: 100vh;
@@ -117,27 +117,22 @@ select {
 }
 
 .control-band {
-  display: grid;
-  grid-template-columns:
-    minmax(66px, 0.45fr)
-    minmax(330px, 1.35fr)
-    minmax(210px, 1.1fr)
-    minmax(96px, 0.6fr)
-    minmax(90px, 0.55fr)
-    minmax(0, 0.2fr)
-    minmax(108px, 0.65fr)
-    minmax(170px, 0.9fr)
-    minmax(90px, 0.55fr);
+  display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
   margin: 0;
-  min-height: 92px;
-  padding: 14px 12px;
+  min-height: 74px;
+  padding: 10px 12px;
   border-radius: 8px;
 }
 
 .control-band > * {
   min-width: 0;
+}
+
+.control-band .field {
+  flex: 0 1 174px;
 }
 
 .field {
@@ -208,19 +203,83 @@ select {
 }
 
 .language-field {
-  grid-column: 7;
+  flex-basis: 128px;
 }
 
 .midi-field {
-  grid-column: 8;
+  flex-basis: 178px;
 }
 
 .midi-command {
-  grid-column: 9;
+  flex: 0 1 96px;
   padding-inline: 8px;
   line-height: 1.05;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.switch-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, auto) 44px;
+  gap: 8px;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 10px 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.switch-field input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.switch-field i {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 140ms ease;
+}
+
+.switch-field i::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  transition: transform 140ms ease;
+}
+
+.switch-field input:checked + i {
+  background: var(--green);
+}
+
+.switch-field input:checked + i::after {
+  transform: translateX(18px);
+}
+
+.switch-field:has(input:focus-visible) {
+  outline: 3px solid rgba(37, 99, 235, 0.26);
+  outline-offset: 2px;
+}
+
+.guitar-switch-field {
+  flex: 0 0 auto;
 }
 
 .command:disabled,
@@ -253,7 +312,7 @@ select:disabled {
 
 .harmony-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -310,6 +369,19 @@ select:disabled {
   color: var(--muted);
   font-size: 16px;
   font-weight: 750;
+}
+
+.degree-controls {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.44fr) minmax(260px, 1.35fr) minmax(190px, 0.9fr) minmax(106px, 0.46fr);
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.degree-controls > * {
+  min-width: 0;
 }
 
 .degree-grid {
@@ -424,6 +496,10 @@ select:disabled {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #e2e8f0;
+}
+
+.analysis-tabs[hidden] {
+  display: none;
 }
 
 .analysis-tab {
@@ -831,6 +907,29 @@ select:disabled {
   align-items: center;
 }
 
+.clear-selection-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 21px;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clear-selection-icon:hover,
+.clear-selection-icon:focus-visible {
+  background: #e2e8f0;
+  color: var(--ink);
+  outline: none;
+}
+
 .legend i {
   width: 14px;
   height: 14px;
@@ -973,7 +1072,7 @@ select:disabled {
 
 @media (min-width: 1000px) and (min-height: 900px) and (max-aspect-ratio: 3/2) {
   .app-shell {
-    grid-template-rows: 120px 86px minmax(0, 1fr) 340px;
+    grid-template-rows: 120px 74px minmax(0, 1fr) 340px;
     gap: 8px;
     width: min(calc(100vw - 18px), 1500px);
     padding: 8px 0;
@@ -998,12 +1097,16 @@ select:disabled {
   }
 
   .control-band {
-    min-height: 86px;
-    padding: 12px;
+    min-height: 74px;
+    padding: 10px 12px;
   }
 
   #modeSelect {
     font-size: 15px;
+  }
+
+  .degree-controls {
+    grid-template-columns: minmax(70px, 0.38fr) minmax(230px, 1.15fr) minmax(180px, 0.9fr) minmax(104px, 0.46fr);
   }
 
   .workspace-grid {
@@ -1042,7 +1145,7 @@ select:disabled {
 
 @media (max-height: 820px) and (min-width: 1181px) {
   .app-shell {
-    grid-template-rows: 112px 84px minmax(0, 1fr) 192px;
+    grid-template-rows: 112px 64px minmax(0, 1fr) 192px;
     gap: 8px;
     padding: 8px 0;
   }
@@ -1073,8 +1176,30 @@ select:disabled {
 
   .field,
   select,
-  .segmented {
+  .segmented,
+  .switch-field {
     height: 46px;
+  }
+
+  .switch-field {
+    min-height: 46px;
+    font-size: 13px;
+  }
+
+  .switch-field i {
+    width: 38px;
+    height: 22px;
+  }
+
+  .switch-field i::after {
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .switch-field input:checked + i::after {
+    transform: translateX(16px);
   }
 
   .field span {
@@ -1090,8 +1215,13 @@ select:disabled {
   }
 
   .control-band {
-    min-height: 84px;
-    padding: 11px 12px;
+    min-height: 64px;
+    padding: 8px 12px;
+  }
+
+  .degree-controls {
+    grid-template-columns: minmax(70px, 0.38fr) minmax(230px, 1.15fr) minmax(180px, 0.9fr) minmax(104px, 0.46fr);
+    margin-bottom: 7px;
   }
 
   .panel-heading h2,
@@ -1147,10 +1277,26 @@ select:disabled {
     grid-template-columns: 1fr 1fr;
   }
 
+  .control-band {
+    flex-wrap: wrap;
+    justify-content: stretch;
+    height: auto;
+  }
+
   .language-field,
   .midi-field,
   .midi-command {
     grid-column: auto;
+  }
+
+  .control-band .field,
+  .guitar-switch-field,
+  .midi-command {
+    flex: 1 1 170px;
+  }
+
+  .degree-controls {
+    grid-template-columns: 1fr 1fr;
   }
 
   .degree-grid {
@@ -1188,6 +1334,11 @@ select:disabled {
   }
 
   .control-band {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .degree-controls {
     grid-template-columns: 1fr;
   }
 

@@ -19,24 +19,15 @@
         </div>
       </section>
 
-      <section class="control-band" aria-label="调性与和弦控制">
-        <label class="field">
-          <span data-i18n="key">主音</span>
-          <select id="keySelect"></select>
-        </label>
-        <label class="field">
-          <span data-i18n="mode">调式</span>
-          <select id="modeSelect"></select>
-        </label>
-        <div class="segmented" role="group" aria-label="和弦层级" data-i18n-attr="aria-label:chordLevel">
-          <button id="triadButton" class="segment" type="button" data-i18n="triads">三和弦</button>
-          <button id="seventhButton" class="segment active" type="button" data-i18n="sevenths">七和弦</button>
-        </div>
-        <button id="playProgression" class="command primary" type="button" data-i18n="playProgression">播放级数</button>
-        <button id="clearSelection" class="command" type="button" data-i18n="clearSelection">清空选键</button>
+      <section class="control-band" aria-label="全局设置" data-i18n-attr="aria-label:globalSettings">
         <label class="field language-field">
           <span data-i18n="language">语言</span>
           <select id="languageSelect"></select>
+        </label>
+        <label class="switch-field guitar-switch-field">
+          <span data-i18n="guitarReference">吉他指法</span>
+          <input id="guitarToggle" type="checkbox" checked />
+          <i aria-hidden="true"></i>
         </label>
         <label class="field midi-field">
           <span data-i18n="midiInput">MIDI 输入</span>
@@ -55,6 +46,21 @@
               <h2 id="harmony-title" data-i18n="degreeChords">各级和弦</h2>
             </div>
             <p id="modeFormula" class="formula-line"></p>
+          </div>
+          <div class="degree-controls" aria-label="调性与和弦控制" data-i18n-attr="aria-label:harmonyControls">
+            <label class="field">
+              <span data-i18n="key">主音</span>
+              <select id="keySelect"></select>
+            </label>
+            <label class="field">
+              <span data-i18n="mode">调式</span>
+              <select id="modeSelect"></select>
+            </label>
+            <div class="segmented" role="group" aria-label="和弦层级" data-i18n-attr="aria-label:chordLevel">
+              <button id="triadButton" class="segment" type="button" data-i18n="triads">三和弦</button>
+              <button id="seventhButton" class="segment active" type="button" data-i18n="sevenths">七和弦</button>
+            </div>
+            <button id="playProgression" class="command primary" type="button" data-i18n="playProgression">播放级数</button>
           </div>
           <div id="degreeGrid" class="degree-grid"></div>
         </section>
@@ -111,6 +117,7 @@
             <h2 data-i18n="pianoTitle">高亮钢琴示例</h2>
           </div>
           <div id="pianoLegend" class="legend">
+            <button id="clearSelection" class="clear-selection-icon" type="button" title="清空选键" aria-label="清空选键" data-i18n-attr="title:clearSelection;aria-label:clearSelection">×</button>
             <span><i class="legend-current"></i><span data-i18n="degreeChordLegend">级数和弦</span></span>
             <span><i class="legend-picked"></i><span data-i18n="manualLegend">手动选键</span></span>
             <span><i class="legend-midi"></i><span data-i18n="midiLegend">MIDI 输入</span></span>
