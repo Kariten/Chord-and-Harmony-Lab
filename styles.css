@@ -34,8 +34,11 @@ body {
 
 button,
 select {
+  appearance: none;
+  -webkit-appearance: none;
   font: inherit;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app-shell {
@@ -170,6 +173,15 @@ select {
   width: 100%;
   height: 54px;
   padding: 17px 34px 4px 14px;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #475569 50%),
+    linear-gradient(135deg, #475569 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-repeat: no-repeat;
+  background-size: 6px 6px;
 }
 
 .segmented {
@@ -1275,6 +1287,88 @@ select:disabled {
   .alias-chip strong,
   .tone-pill strong {
     font-size: 16px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .app-shell {
+    grid-template-rows: 120px 74px minmax(0, 1fr) 340px;
+    gap: 8px;
+    width: calc(100vw - 18px);
+    padding: 8px 0;
+  }
+
+  .hero-band {
+    min-height: 120px;
+    padding: 16px 18px;
+  }
+
+  .hero-band h1 {
+    font-size: 38px;
+  }
+
+  .hero-meter {
+    min-width: 286px;
+    min-height: 84px;
+    padding: 13px 15px;
+  }
+
+  .hero-meter strong {
+    font-size: 40px;
+  }
+
+  .control-band {
+    min-height: 74px;
+    padding: 10px 12px;
+  }
+
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 38vw);
+  }
+
+  .harmony-panel,
+  .analysis-panel,
+  .piano-band {
+    padding: 11px;
+  }
+
+  .degree-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .degree-controls .segmented,
+  #playProgression {
+    grid-row: 2;
+  }
+
+  .segment {
+    min-width: 0;
+  }
+
+  .degree-grid {
+    grid-template-columns: repeat(7, minmax(118px, 1fr));
+  }
+
+  .panel-heading h2,
+  .piano-toolbar h2 {
+    font-size: 23px;
+  }
+
+  .formula-line {
+    font-size: 14px;
+  }
+
+  .analysis-panel {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .detected-name {
+    font-size: 34px;
+  }
+
+  .piano {
+    min-width: 100%;
   }
 }
 
