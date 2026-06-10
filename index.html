@@ -117,7 +117,10 @@
             <h2 data-i18n="pianoTitle">高亮钢琴示例</h2>
           </div>
           <div id="pianoLegend" class="legend">
-            <button id="clearSelection" class="clear-selection-icon" type="button" title="清空选键" aria-label="清空选键" data-i18n-attr="title:clearSelection;aria-label:clearSelection">×</button>
+            <button id="clearSelection" class="clear-selection-button" type="button" title="清空选键" aria-label="清空选键" data-i18n-attr="title:clearSelection;aria-label:clearSelection">
+              <span class="trash-icon" aria-hidden="true"></span>
+              <span data-i18n="clearSelection">清空选键</span>
+            </button>
             <span><i class="legend-current"></i><span data-i18n="degreeChordLegend">级数和弦</span></span>
             <span><i class="legend-picked"></i><span data-i18n="manualLegend">手动选键</span></span>
             <span><i class="legend-midi"></i><span data-i18n="midiLegend">MIDI 输入</span></span>
