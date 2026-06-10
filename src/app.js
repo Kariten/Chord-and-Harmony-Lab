@@ -11,7 +11,9 @@ import {
   noteNameWithOctave,
   pc,
   pianoKeys,
-  scalePitchClasses
+  scaleNoteNames,
+  scalePitchClasses,
+  scaleUsesFlats
 } from "./chordEngine.js";
 import { playMidiNotes } from "./audio.js";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
@@ -190,9 +192,10 @@ function render() {
   const mode = modeById(state.modeId);
   const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
   const activeChord = chords[state.selectedDegree];
-  const scaleNotes = scalePitchClasses(state.keyPc, state.modeId).map((notePc) => noteName(notePc, key.preferFlats));
+  const preferFlats = scaleUsesFlats(state.keyPc, state.modeId);
+  const scaleNotes = scaleNoteNames(state.keyPc, state.modeId);
 
-  renderHero(activeChord, key, mode, key.preferFlats);
+  renderHero(activeChord, key, mode, preferFlats);
   dom.modeFormula.textContent = t("scale", { notes: scaleNotes.join("  ") });
   dom.triadButton.classList.toggle("active", state.chordSize === "triad");
   dom.seventhButton.classList.toggle("active", state.chordSize === "seventh");
@@ -203,8 +206,8 @@ function render() {
   renderMidiControls();
   renderAnalysisTabs();
   renderDegrees(chords);
-  renderAnalysis(activeChord, key.preferFlats);
-  renderPianoState(activeChord, key.preferFlats);
+  renderAnalysis(activeChord, preferFlats);
+  renderPianoState(activeChord, preferFlats);
 }
 
 function renderHero(activeChord, key, mode, preferFlats) {
@@ -412,7 +415,7 @@ function renderAnalysis(activeChord, preferFlats) {
     dom.detectedName.textContent = activeChord.name;
     dom.detectedFormula.textContent = `${activeChord.quality}｜${activeChord.intervals.map(intervalLabel).join("  ")}`;
     renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: t("aliasLabel") })));
-    renderToneMap(activeChord.rootPc, activeChord.pitchClasses, preferFlats);
+    renderToneMap(activeChord.rootPc, activeChord.pitchClasses, preferFlats, activeChord.notes);
     renderGuitarReference({
       name: activeChord.name,
       rootPc: activeChord.rootPc,
@@ -461,14 +464,14 @@ function renderAliases(items) {
   });
 }
 
-function renderToneMap(rootPc, pitchClasses, preferFlats) {
+function renderToneMap(rootPc, pitchClasses, preferFlats, spellings = []) {
   dom.toneMap.replaceChildren();
-  pitchClasses.forEach((notePc) => {
+  pitchClasses.forEach((notePc, index) => {
     const tone = document.createElement("div");
     tone.className = "tone-pill";
     tone.classList.toggle("root", rootPc === notePc);
     const interval = rootPc === null ? "" : intervalLabel(pc(notePc - rootPc));
-    tone.innerHTML = `<strong>${noteName(notePc, preferFlats)}</strong><span>${interval || t("selected")}</span>`;
+    tone.innerHTML = `<strong>${spellings[index] ?? noteName(notePc, preferFlats)}</strong><span>${interval || t("selected")}</span>`;
     dom.toneMap.append(tone);
   });
 }

@@ -1,5 +1,15 @@
 export const NOTE_NAMES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 export const NOTE_NAMES_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const NATURAL_PCS = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11
+};
 
 export const KEY_OPTIONS = [
   { name: "C", pc: 0, preferFlats: false },
@@ -187,33 +197,55 @@ export function scalePitchClasses(keyPc, modeId) {
   return mode.intervals.map((interval) => pc(keyPc + interval));
 }
 
+export function scaleNoteNames(keyPc, modeId) {
+  const key = keyByPc(keyPc);
+  const mode = modeById(modeId);
+  const startLetterIndex = LETTERS.indexOf(key.name[0]);
+
+  return mode.intervals.map((interval, index) => {
+    const letter = LETTERS[(startLetterIndex + index) % LETTERS.length];
+    return spellPitchClass(pc(keyPc + interval), letter);
+  });
+}
+
+export function scaleUsesFlats(keyPc, modeId) {
+  const key = keyByPc(keyPc);
+  const names = scaleNoteNames(keyPc, modeId);
+  const flatCount = names.reduce((count, name) => count + (name.match(/b/g) ?? []).length, 0);
+  const sharpCount = names.reduce((count, name) => count + (name.match(/#/g) ?? []).length + (name.match(/x/g) ?? []).length * 2, 0);
+  return flatCount === sharpCount ? key.preferFlats : flatCount > sharpCount;
+}
+
 export function buildDiatonicChords(keyPc, modeId, chordSize = "seventh") {
   const mode = modeById(modeId);
-  const key = keyByPc(keyPc);
   const scale = scalePitchClasses(keyPc, modeId);
+  const scaleNames = scaleNoteNames(keyPc, modeId);
   const noteCount = chordSize === "triad" ? 3 : 4;
 
   return scale.map((rootPc, index) => {
-    const pitchClasses = Array.from({ length: noteCount }, (_, toneIndex) => {
+    const scaleIndexes = Array.from({ length: noteCount }, (_, toneIndex) => {
       const scaleIndex = (index + toneIndex * 2) % 7;
-      return scale[scaleIndex];
+      return scaleIndex;
     });
+    const pitchClasses = scaleIndexes.map((scaleIndex) => scale[scaleIndex]);
     const intervals = intervalsFromRoot(rootPc, pitchClasses);
     const type = QUALITY_BY_INTERVALS.get(intervalKey(intervals)) ?? describeByIntervals(intervals);
-    const name = chordName(rootPc, type.suffix, key.preferFlats);
+    const rootName = scaleNames[index];
+    const name = chordSymbol(rootName, type.suffix);
 
     return {
       degree: index + 1,
       roman: romanForQuality(index, type),
       scaleDegree: SCALE_DEGREES[index],
       rootPc,
+      rootName,
       pitchClasses,
       intervals,
       name,
       suffix: type.suffix,
       quality: type.quality,
-      aliases: buildSymbolAliases(rootPc, type, key.preferFlats),
-      notes: pitchClasses.map((notePc) => noteName(notePc, key.preferFlats)),
+      aliases: buildSymbolAliases(rootPc, type, scaleUsesFlats(keyPc, modeId), rootName),
+      notes: scaleIndexes.map((scaleIndex) => scaleNames[scaleIndex]),
       color: mode.color
     };
   });
@@ -314,12 +346,36 @@ function intervalKey(intervals) {
 }
 
 function chordName(rootPc, suffix, preferFlats) {
-  return `${noteName(rootPc, preferFlats)}${suffix}`;
+  return chordSymbol(noteName(rootPc, preferFlats), suffix);
 }
 
-function buildSymbolAliases(rootPc, type, preferFlats) {
-  const root = noteName(rootPc, preferFlats);
+function chordSymbol(rootName, suffix) {
+  return `${rootName}${suffix}`;
+}
+
+function buildSymbolAliases(rootPc, type, preferFlats, rootName = noteName(rootPc, preferFlats)) {
+  const root = rootName;
   return type.aliases.map((alias) => `${root}${alias}`);
+}
+
+function spellPitchClass(pitchClass, letter) {
+  const naturalPc = NATURAL_PCS[letter];
+  const accidental = signedSemitoneDistance(naturalPc, pitchClass);
+  return `${letter}${accidentalText(accidental)}`;
+}
+
+function signedSemitoneDistance(fromPc, toPc) {
+  const upward = pc(toPc - fromPc);
+  return upward > 6 ? upward - 12 : upward;
+}
+
+function accidentalText(semitones) {
+  if (semitones === -2) return "bb";
+  if (semitones === -1) return "b";
+  if (semitones === 0) return "";
+  if (semitones === 1) return "#";
+  if (semitones === 2) return "x";
+  return semitones > 0 ? "#".repeat(semitones) : "b".repeat(Math.abs(semitones));
 }
 
 function buildMatch(rootPc, type, bassPc, preferFlats, pitchClasses) {

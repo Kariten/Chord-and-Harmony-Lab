@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  KEY_OPTIONS,
+  MODES,
   buildDiatonicChords,
   identifyChord,
   intervalLabel,
   noteName,
+  scaleNoteNames,
   scalePitchClasses
 } from "../src/chordEngine.js";
 
@@ -16,6 +19,30 @@ test("builds standard seventh chords in C major", () => {
 test("builds harmonic minor seventh color tones", () => {
   const names = buildDiatonicChords(9, "harmonic-minor", "seventh").map((chord) => chord.name);
   assert.deepEqual(names, ["AmMaj7", "Bm7b5", "Cmaj7#5", "Dm7", "E7", "Fmaj7", "G#dim7"]);
+});
+
+test("spells modal scales with one letter name per degree", () => {
+  assert.deepEqual(scaleNoteNames(0, "aeolian"), ["C", "D", "Eb", "F", "G", "Ab", "Bb"]);
+  assert.deepEqual(scaleNoteNames(0, "harmonic-minor"), ["C", "D", "Eb", "F", "G", "Ab", "B"]);
+  assert.deepEqual(scaleNoteNames(6, "harmonic-minor"), ["F#", "G#", "A", "B", "C#", "D", "E#"]);
+  assert.deepEqual(scaleNoteNames(1, "harmonic-major"), ["Db", "Eb", "F", "Gb", "Ab", "Bbb", "C"]);
+
+  for (const key of KEY_OPTIONS) {
+    for (const mode of MODES) {
+      const letters = scaleNoteNames(key.pc, mode.id).map((name) => name[0]);
+      assert.deepEqual(new Set(letters).size, 7, `${key.name} ${mode.id} repeats a letter: ${letters.join(" ")}`);
+    }
+  }
+});
+
+test("uses modal spellings for diatonic chord roots and chord tones", () => {
+  const cAeolian = buildDiatonicChords(0, "aeolian", "seventh");
+  assert.deepEqual(cAeolian.map((chord) => chord.name), ["Cm7", "Dm7b5", "Ebmaj7", "Fm7", "Gm7", "Abmaj7", "Bb7"]);
+  assert.deepEqual(cAeolian[2].notes, ["Eb", "G", "Bb", "D"]);
+
+  const dbHarmonicMajor = buildDiatonicChords(1, "harmonic-major", "triad");
+  assert.equal(dbHarmonicMajor[5].name, "Bbbaug");
+  assert.deepEqual(dbHarmonicMajor[5].notes, ["Bbb", "Db", "F"]);
 });
 
 test("recognizes dominant seventh inversions with slash bass", () => {
