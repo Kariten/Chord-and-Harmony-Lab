@@ -221,8 +221,7 @@ function harmonyContextSummary(rootPc, pitchClasses, preferFlats) {
   if (contexts.length === 0) return noteName(rootPc, preferFlats);
 
   const visible = contexts.slice(0, 3).map((context) => context.label);
-  const extraCount = contexts.length - visible.length;
-  return extraCount > 0 ? `${visible.join(" / ")} +${extraCount}` : visible.join(" / ");
+  return visible.join(" / ");
 }
 
 function matchingDiatonicContexts(rootPc, pitchClasses, preferFlats) {
