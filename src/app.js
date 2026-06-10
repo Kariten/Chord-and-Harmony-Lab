@@ -299,6 +299,7 @@ function renderAnalysis(activeChord, preferFlats) {
 
   if (picked.length === 0) {
     dom.manualNotes.textContent = t("currentDegree", { notes: activeChord.notes.join("  ") });
+    dom.detectedName.classList.remove("unmatched");
     dom.detectedName.textContent = activeChord.name;
     dom.detectedFormula.textContent = `${activeChord.quality}｜${activeChord.intervals.map(intervalLabel).join("  ")}`;
     renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: t("aliasLabel") })));
@@ -315,6 +316,7 @@ function renderAnalysis(activeChord, preferFlats) {
   dom.manualNotes.textContent = `${source}：${manual.displayNotes.join("  ")}`;
 
   if (manual.status === "exact") {
+    dom.detectedName.classList.remove("unmatched");
     dom.detectedName.textContent = manual.primary.symbol;
     dom.detectedFormula.textContent = `${manual.primary.quality}｜${manual.primary.intervalLabels.join("  ")}`;
     renderAliases(manual.aliases);
@@ -328,6 +330,7 @@ function renderAnalysis(activeChord, preferFlats) {
     return;
   }
 
+  dom.detectedName.classList.add("unmatched");
   dom.detectedName.textContent = t("unknownChord");
   dom.detectedFormula.textContent = t("keepAdding");
   renderAliases(manual.suggestions.map((suggestion) => ({

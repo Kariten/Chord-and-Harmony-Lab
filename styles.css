@@ -506,6 +506,15 @@ select:disabled {
   white-space: nowrap;
 }
 
+.detected-name.unmatched {
+  font-size: 24px;
+  line-height: 1.08;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .analysis-display .formula-line {
   color: rgba(255, 255, 255, 0.78);
 }
