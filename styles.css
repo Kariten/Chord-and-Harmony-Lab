@@ -519,17 +519,10 @@ select:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  max-height: 116px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding-right: 2px;
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
 }
 
 .tone-map {
-  min-height: 0;
-  overflow: auto;
   padding-right: 2px;
 }
 
@@ -1021,10 +1014,6 @@ select:disabled {
 
   .detected-name {
     font-size: 36px;
-  }
-
-  .alias-list {
-    max-height: 128px;
   }
 
   .tone-map-grid {
