@@ -2,6 +2,7 @@ import {
   KEY_OPTIONS,
   MODES,
   buildDiatonicChords,
+  centeredChordMidiVoicing,
   chordMidiVoicing,
   identifyChord,
   intervalLabel,
@@ -666,7 +667,6 @@ function renderPianoState(activeChord, preferFlats) {
 }
 
 function playActiveSound() {
-  const key = keyByPc(state.keyPc);
   const { values: picked } = activeInputMidis();
   if (picked.length > 0) {
     playMidiNotes(picked);
@@ -674,7 +674,7 @@ function playActiveSound() {
   }
 
   const chord = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize)[state.selectedDegree];
-  playMidiNotes(chordMidiVoicing(chord, key.preferFlats ? 3 : 4));
+  playMidiNotes(centeredChordMidiVoicing(chord));
 }
 
 function activeInputMidis() {

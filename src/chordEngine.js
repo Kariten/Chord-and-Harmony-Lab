@@ -306,6 +306,23 @@ export function chordMidiVoicing(chord, baseOctave = 4) {
   return chord.intervals.map((interval) => baseMidi + interval);
 }
 
+export function centeredChordMidiVoicing(chord, lowMidi = 60, highMidi = 71) {
+  const candidates = [];
+  for (let baseOctave = 1; baseOctave <= 6; baseOctave += 1) {
+    const notes = chordMidiVoicing(chord, baseOctave);
+    const lowest = Math.min(...notes);
+    const highest = Math.max(...notes);
+    const inRangePenalty = lowest >= lowMidi && lowest <= highMidi ? 0 : Math.min(Math.abs(lowest - lowMidi), Math.abs(lowest - highMidi)) * 24;
+    const center = (lowest + highest) / 2;
+    candidates.push({
+      notes,
+      score: inRangePenalty + Math.abs(center - 66) + Math.max(0, highest - 83) * 4
+    });
+  }
+
+  return candidates.sort((a, b) => a.score - b.score)[0].notes;
+}
+
 export function pianoKeys(startMidi = 48, endMidi = 83) {
   return Array.from({ length: endMidi - startMidi + 1 }, (_, index) => {
     const midi = startMidi + index;

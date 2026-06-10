@@ -4,6 +4,8 @@ import {
   KEY_OPTIONS,
   MODES,
   buildDiatonicChords,
+  centeredChordMidiVoicing,
+  chordMidiVoicing,
   identifyChord,
   intervalLabel,
   noteName,
@@ -43,6 +45,24 @@ test("uses modal spellings for diatonic chord roots and chord tones", () => {
   const dbHarmonicMajor = buildDiatonicChords(1, "harmonic-major", "triad");
   assert.equal(dbHarmonicMajor[5].name, "Bbbaug");
   assert.deepEqual(dbHarmonicMajor[5].notes, ["Bbb", "Db", "F"]);
+});
+
+test("centers default chord playback near the middle octave", () => {
+  const dbMajor = buildDiatonicChords(1, "harmonic-major", "seventh")[0];
+  assert.deepEqual(chordMidiVoicing(dbMajor, 3), [49, 53, 56, 60]);
+  assert.deepEqual(centeredChordMidiVoicing(dbMajor), [61, 65, 68, 72]);
+
+  const bHalfDiminished = buildDiatonicChords(0, "ionian", "seventh")[6];
+  assert.deepEqual(centeredChordMidiVoicing(bHalfDiminished), [71, 74, 77, 81]);
+
+  for (const key of KEY_OPTIONS) {
+    for (const mode of MODES) {
+      for (const chord of buildDiatonicChords(key.pc, mode.id, "seventh")) {
+        const notes = centeredChordMidiVoicing(chord);
+        assert.ok(notes[0] >= 60 && notes[0] <= 71, `${chord.name} starts outside C4-B4: ${notes.join(" ")}`);
+      }
+    }
+  }
 });
 
 test("recognizes dominant seventh inversions with slash bass", () => {
