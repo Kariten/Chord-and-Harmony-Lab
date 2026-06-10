@@ -183,8 +183,7 @@ function render() {
   const activeChord = chords[state.selectedDegree];
   const scaleNotes = scalePitchClasses(state.keyPc, state.modeId).map((notePc) => noteName(notePc, key.preferFlats));
 
-  dom.heroKey.textContent = `${key.name} ${mode.shortName}`;
-  dom.heroChord.textContent = activeChord.name;
+  renderHero(activeChord, key, mode, key.preferFlats);
   dom.modeFormula.textContent = t("scale", { notes: scaleNotes.join("  ") });
   dom.triadButton.classList.toggle("active", state.chordSize === "triad");
   dom.seventhButton.classList.toggle("active", state.chordSize === "seventh");
@@ -196,6 +195,100 @@ function render() {
   renderDegrees(chords);
   renderAnalysis(activeChord, key.preferFlats);
   renderPianoState(activeChord, key.preferFlats);
+}
+
+function renderHero(activeChord, key, mode, preferFlats) {
+  const { values: picked } = activeInputMidis();
+  if (picked.length === 0) {
+    dom.heroKey.textContent = `${key.name} ${mode.shortName}`;
+    dom.heroChord.textContent = activeChord.name;
+    return;
+  }
+
+  const manual = identifyChord(picked, { preferFlats });
+  if (manual.status === "exact") {
+    dom.heroKey.textContent = harmonyContextSummary(manual.primary.rootPc, manual.pitchClasses, preferFlats);
+    dom.heroChord.textContent = manual.primary.symbol;
+    return;
+  }
+
+  dom.heroKey.textContent = manual.displayNotes.join("  ");
+  dom.heroChord.textContent = t("unknownChord");
+}
+
+function harmonyContextSummary(rootPc, pitchClasses, preferFlats) {
+  const contexts = matchingDiatonicContexts(rootPc, pitchClasses, preferFlats);
+  if (contexts.length === 0) return noteName(rootPc, preferFlats);
+
+  const visible = contexts.slice(0, 3).map((context) => context.label);
+  const extraCount = contexts.length - visible.length;
+  return extraCount > 0 ? `${visible.join(" / ")} +${extraCount}` : visible.join(" / ");
+}
+
+function matchingDiatonicContexts(rootPc, pitchClasses, preferFlats) {
+  const chordSize = pitchClasses.length <= 3 ? "triad" : "seventh";
+  const exactContexts = [];
+
+  KEY_OPTIONS.forEach((key) => {
+    MODES.forEach((mode) => {
+      const chords = buildDiatonicChords(key.pc, mode.id, chordSize);
+      chords.forEach((chord) => {
+        if (chord.rootPc === rootPc && samePitchClassSet(chord.pitchClasses, pitchClasses)) {
+          exactContexts.push(contextRecord(key, mode));
+        }
+      });
+    });
+  });
+
+  const contexts = exactContexts.length ? exactContexts : scaleContainmentContexts(rootPc, pitchClasses);
+  return uniqueContexts(contexts).sort((a, b) => contextSort(a, b, rootPc));
+}
+
+function scaleContainmentContexts(rootPc, pitchClasses) {
+  const contexts = [];
+  KEY_OPTIONS.forEach((key) => {
+    MODES.forEach((mode) => {
+      const scale = scalePitchClasses(key.pc, mode.id);
+      if (scale.includes(rootPc) && pitchClasses.every((notePc) => scale.includes(notePc))) {
+        contexts.push(contextRecord(key, mode));
+      }
+    });
+  });
+  return contexts;
+}
+
+function contextRecord(key, mode) {
+  return {
+    keyPc: key.pc,
+    modeId: mode.id,
+    label: `${key.name} ${mode.shortName}`
+  };
+}
+
+function uniqueContexts(contexts) {
+  const seen = new Set();
+  return contexts.filter((context) => {
+    const key = `${context.keyPc}:${context.modeId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function contextSort(a, b, rootPc) {
+  return contextScore(a, rootPc) - contextScore(b, rootPc) || a.label.localeCompare(b.label);
+}
+
+function contextScore(context, rootPc) {
+  const modePriority = ["ionian", "aeolian", "dorian", "mixolydian", "lydian", "harmonic-minor", "melodic-minor", "phrygian", "locrian", "harmonic-major"];
+  const currentBonus = context.keyPc === state.keyPc && context.modeId === state.modeId ? -100 : 0;
+  const selectedKeyBonus = context.keyPc === state.keyPc ? -12 : 0;
+  const chordTonicBonus = context.keyPc === rootPc ? -8 : 0;
+  return currentBonus + selectedKeyBonus + chordTonicBonus + modePriority.indexOf(context.modeId);
+}
+
+function samePitchClassSet(a, b) {
+  return a.length === b.length && a.every((notePc) => b.includes(notePc));
 }
 
 function setAnalysisView(view) {

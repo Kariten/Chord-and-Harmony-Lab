@@ -93,21 +93,27 @@ select {
 
 .hero-meter {
   display: grid;
-  align-content: center;
+  align-self: center;
+  place-content: center;
+  gap: 4px;
   min-width: 320px;
+  min-height: 88px;
   padding: 16px 18px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.12);
+  text-align: left;
 }
 
 .hero-meter span {
   font-size: 20px;
+  line-height: 1.1;
   color: #fde68a;
 }
 
 .hero-meter strong {
   font-size: 46px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .control-band {
