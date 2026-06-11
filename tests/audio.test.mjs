@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PLAYBACK_TEXTURES, chordPlaybackEvents, playbackWindow } from "../src/audio.js";
+import { PLAYBACK_TEXTURES, chordPlaybackEvents, midiPlaybackWindow, playbackWindow } from "../src/audio.js";
 
 test("provides layered playback textures including the original block chord", () => {
   assert.deepEqual(
@@ -36,6 +36,13 @@ test("keeps the master release after the final texture note", () => {
   assert.ok(lastEvent.time + lastEvent.duration > 1.6);
   assert.ok(window.eventEnd >= lastEvent.time + lastEvent.duration);
   assert.ok(window.playbackEnd > window.eventEnd);
+});
+
+test("reports a full playback window for progression scheduling", () => {
+  const window = midiPlaybackWindow([60, 64, 67, 71], { texture: "arpeggio-up", duration: 1.6, spread: 0.012 });
+
+  assert.ok(window.playbackEnd > 1.8);
+  assert.ok(window.playbackEnd > 0.76 * 2);
 });
 
 test("adapts alberti and waltz textures to different chord sizes", () => {

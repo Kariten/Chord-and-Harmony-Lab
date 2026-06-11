@@ -16,7 +16,7 @@ import {
   scalePitchClasses,
   scaleUsesFlats
 } from "./chordEngine.js";
-import { PLAYBACK_TEXTURES, playMidiNotes } from "./audio.js";
+import { PLAYBACK_TEXTURES, midiPlaybackWindow, playMidiNotes } from "./audio.js";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
@@ -36,7 +36,9 @@ const state = {
   midiStatus: "",
   analysisView: "tones",
   guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
-  texture: localStorage.getItem("chordLabTexture") || "block"
+  texture: localStorage.getItem("chordLabTexture") || "block",
+  progressionTimers: [],
+  isPlayingProgression: false
 };
 
 const dom = {
@@ -98,12 +100,14 @@ function init() {
   });
 
   dom.textureSelect.addEventListener("change", () => {
+    clearProgressionTimers();
     state.texture = dom.textureSelect.value;
     localStorage.setItem("chordLabTexture", state.texture);
     render();
   });
 
   dom.keySelect.addEventListener("change", () => {
+    clearProgressionTimers();
     state.keyPc = Number(dom.keySelect.value);
     state.selectedDegree = 0;
     state.pickedMidis.clear();
@@ -111,6 +115,7 @@ function init() {
   });
 
   dom.modeSelect.addEventListener("change", () => {
+    clearProgressionTimers();
     state.modeId = dom.modeSelect.value;
     state.selectedDegree = 0;
     state.pickedMidis.clear();
@@ -118,11 +123,13 @@ function init() {
   });
 
   dom.triadButton.addEventListener("click", () => {
+    clearProgressionTimers();
     state.chordSize = "triad";
     render();
   });
 
   dom.seventhButton.addEventListener("click", () => {
+    clearProgressionTimers();
     state.chordSize = "seventh";
     render();
   });
@@ -224,6 +231,7 @@ function render() {
   dom.keySelect.value = String(state.keyPc);
   dom.modeSelect.value = state.modeId;
   dom.textureSelect.value = state.texture;
+  dom.playProgression.disabled = state.isPlayingProgression;
   dom.guitarToggle.checked = state.guitarEnabled;
 
   renderMidiControls();
@@ -848,15 +856,41 @@ function currentMidiSupport() {
   });
 }
 
+function clearProgressionTimers() {
+  state.progressionTimers.forEach((timer) => window.clearTimeout(timer));
+  state.progressionTimers = [];
+  state.isPlayingProgression = false;
+}
+
 function playProgression() {
+  clearProgressionTimers();
   const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
+  const texture = state.texture;
+  const duration = 1.6;
+  const spread = 0.012;
+  let delay = 0;
+
+  state.isPlayingProgression = true;
+  render();
+
   chords.forEach((chord, index) => {
-    window.setTimeout(() => {
+    const midiNotes = chordMidiVoicing(chord, 4);
+    const options = { texture, duration, spread, rootPc: chord.rootPc };
+    const timer = window.setTimeout(() => {
       state.selectedDegree = index;
       render();
-      playChord(chordMidiVoicing(chord, 4), { duration: 1.25, spread: 0.012, rootPc: chord.rootPc });
-    }, index * 760);
+      playChord(midiNotes, { duration, spread, rootPc: chord.rootPc });
+    }, delay * 1000);
+    state.progressionTimers.push(timer);
+    delay += midiPlaybackWindow(midiNotes, options).playbackEnd;
   });
+
+  const doneTimer = window.setTimeout(() => {
+    state.progressionTimers = [];
+    state.isPlayingProgression = false;
+    render();
+  }, delay * 1000);
+  state.progressionTimers.push(doneTimer);
 }
 
 init();

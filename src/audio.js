@@ -124,6 +124,18 @@ export function chordPlaybackEvents(midiNotes, options = {}) {
   }));
 }
 
+export function midiPlaybackWindow(midiNotes, options = {}) {
+  const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
+  const duration = options.duration ?? 1.6;
+  const events = chordPlaybackEvents(notes, {
+    texture: options.texture,
+    duration,
+    spread: options.spread,
+    rootPc: options.rootPc
+  });
+  return playbackWindow(events, duration);
+}
+
 export function playbackWindow(events, duration) {
   const eventEnd = events.reduce((end, event) => Math.max(end, event.time + event.duration), duration);
   return {
