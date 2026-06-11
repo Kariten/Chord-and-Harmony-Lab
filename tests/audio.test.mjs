@@ -38,11 +38,11 @@ test("keeps the master release after the final texture note", () => {
   assert.ok(window.playbackEnd > window.eventEnd);
 });
 
-test("reports a full playback window for progression scheduling", () => {
+test("reports release time beyond the musical bar duration", () => {
   const window = midiPlaybackWindow([60, 64, 67, 71], { texture: "arpeggio-up", duration: 1.6, spread: 0.012 });
 
-  assert.ok(window.playbackEnd > 1.8);
-  assert.ok(window.playbackEnd > 0.76 * 2);
+  assert.ok(window.eventEnd > 1.6);
+  assert.ok(window.playbackEnd > window.eventEnd);
 });
 
 test("adapts alberti and waltz textures to different chord sizes", () => {

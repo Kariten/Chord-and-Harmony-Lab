@@ -869,6 +869,7 @@ function playProgression() {
   const duration = 1.6;
   const spread = 0.012;
   let delay = 0;
+  let playbackEnd = 0;
 
   state.isPlayingProgression = true;
   render();
@@ -882,14 +883,15 @@ function playProgression() {
       playChord(midiNotes, { duration, spread, rootPc: chord.rootPc });
     }, delay * 1000);
     state.progressionTimers.push(timer);
-    delay += midiPlaybackWindow(midiNotes, options).playbackEnd;
+    playbackEnd = delay + midiPlaybackWindow(midiNotes, options).playbackEnd;
+    delay += duration;
   });
 
   const doneTimer = window.setTimeout(() => {
     state.progressionTimers = [];
     state.isPlayingProgression = false;
     render();
-  }, delay * 1000);
+  }, playbackEnd * 1000);
   state.progressionTimers.push(doneTimer);
 }
 
