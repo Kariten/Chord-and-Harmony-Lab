@@ -1,4 +1,4 @@
-export const LANGUAGES = [
+﻿export const LANGUAGES = [
   { id: "zh-CN", label: "中文" },
   { id: "en", label: "English" },
   { id: "ja", label: "日本語" },

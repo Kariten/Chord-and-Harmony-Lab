@@ -25,13 +25,14 @@ export function playMidiNotes(midiNotes, options = {}) {
     spread: options.spread,
     rootPc: options.rootPc
   });
+  const { eventEnd, playbackEnd } = playbackWindow(events, duration);
   const master = audioContext.createGain();
   const compressor = audioContext.createDynamicsCompressor();
 
   master.gain.setValueAtTime(0.0001, now);
   master.gain.exponentialRampToValueAtTime(0.46, now + 0.035);
-  master.gain.exponentialRampToValueAtTime(0.18, now + duration * 0.72);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  master.gain.setValueAtTime(0.42, now + Math.max(0.04, eventEnd - 0.02));
+  master.gain.exponentialRampToValueAtTime(0.0001, now + playbackEnd);
 
   compressor.threshold.value = -20;
   compressor.knee.value = 18;
@@ -44,7 +45,7 @@ export function playMidiNotes(midiNotes, options = {}) {
 
   events.forEach((event) => {
     const start = now + event.time;
-    const stop = now + Math.min(duration + 0.05, event.time + event.duration + 0.05);
+    const stop = now + Math.min(playbackEnd, event.time + event.duration + 0.05);
     const osc = audioContext.createOscillator();
     const overtone = audioContext.createOscillator();
     const gain = audioContext.createGain();
@@ -121,6 +122,14 @@ export function chordPlaybackEvents(midiNotes, options = {}) {
     velocity: 1,
     voiceCount
   }));
+}
+
+export function playbackWindow(events, duration) {
+  const eventEnd = events.reduce((end, event) => Math.max(end, event.time + event.duration), duration);
+  return {
+    eventEnd,
+    playbackEnd: eventEnd + 0.12
+  };
 }
 
 function slotEvents(pattern, duration, slotCount, voiceCount) {

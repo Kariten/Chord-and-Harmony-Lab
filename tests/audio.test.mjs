@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PLAYBACK_TEXTURES, chordPlaybackEvents } from "../src/audio.js";
+import { PLAYBACK_TEXTURES, chordPlaybackEvents, playbackWindow } from "../src/audio.js";
 
 test("provides layered playback textures including the original block chord", () => {
   assert.deepEqual(
@@ -25,6 +25,17 @@ test("uses stable arpeggio timing across triads and seventh chords", () => {
   assert.deepEqual(seventh.map((event) => event.midi), [60, 64, 67, 71, 60, 64, 67, 71]);
   assert.equal(seventh.length, 8);
   assert.equal(round(seventh.at(-1).time), 1.4);
+});
+
+test("keeps the master release after the final texture note", () => {
+  const events = chordPlaybackEvents([60, 64, 67, 71], { texture: "arpeggio-up", duration: 1.6 });
+  const lastEvent = events.at(-1);
+  const window = playbackWindow(events, 1.6);
+
+  assert.ok(lastEvent.time < 1.6);
+  assert.ok(lastEvent.time + lastEvent.duration > 1.6);
+  assert.ok(window.eventEnd >= lastEvent.time + lastEvent.duration);
+  assert.ok(window.playbackEnd > window.eventEnd);
 });
 
 test("adapts alberti and waltz textures to different chord sizes", () => {
