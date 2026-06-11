@@ -2,6 +2,14 @@ import { midiToFrequency } from "./chordEngine.js";
 
 let audioContext;
 
+export const PLAYBACK_TEXTURES = [
+  { id: "block", nameKey: "textureBlock" },
+  { id: "arpeggio-up", nameKey: "textureArpeggioUp" },
+  { id: "arpeggio-down", nameKey: "textureArpeggioDown" },
+  { id: "alberti", nameKey: "textureAlberti" },
+  { id: "waltz", nameKey: "textureWaltz" }
+];
+
 export function playMidiNotes(midiNotes, options = {}) {
   const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
   if (!notes.length) return;
@@ -9,7 +17,7 @@ export function playMidiNotes(midiNotes, options = {}) {
   audioContext ??= new AudioContext();
   const now = audioContext.currentTime;
   const duration = options.duration ?? 1.6;
-  const spread = options.spread ?? 0.018;
+  const events = chordPlaybackEvents(notes, { texture: options.texture, duration, spread: options.spread });
   const master = audioContext.createGain();
   const compressor = audioContext.createDynamicsCompressor();
 
@@ -27,8 +35,9 @@ export function playMidiNotes(midiNotes, options = {}) {
   master.connect(compressor);
   compressor.connect(audioContext.destination);
 
-  notes.forEach((midi, index) => {
-    const start = now + index * spread;
+  events.forEach((event) => {
+    const start = now + event.time;
+    const stop = now + Math.min(duration + 0.05, event.time + event.duration + 0.05);
     const osc = audioContext.createOscillator();
     const overtone = audioContext.createOscillator();
     const gain = audioContext.createGain();
@@ -45,11 +54,11 @@ export function playMidiNotes(midiNotes, options = {}) {
     filter.Q.value = 0.7;
 
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.34 / Math.sqrt(notes.length), start + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    gain.gain.exponentialRampToValueAtTime((0.34 * event.velocity) / Math.sqrt(event.voiceCount), start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.001, stop);
 
-    overtoneGain.gain.setValueAtTime(0.035 / Math.sqrt(notes.length), start);
-    overtoneGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.82);
+    overtoneGain.gain.setValueAtTime((0.035 * event.velocity) / Math.sqrt(event.voiceCount), start);
+    overtoneGain.gain.exponentialRampToValueAtTime(0.001, stop);
 
     osc.connect(gain);
     overtone.connect(overtoneGain);
@@ -59,7 +68,92 @@ export function playMidiNotes(midiNotes, options = {}) {
 
     osc.start(start);
     overtone.start(start);
-    osc.stop(now + duration + 0.05);
-    overtone.stop(now + duration + 0.05);
+    osc.stop(stop);
+    overtone.stop(stop);
   });
+}
+
+export function chordPlaybackEvents(midiNotes, options = {}) {
+  const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
+  if (!notes.length) return [];
+
+  const texture = options.texture ?? "block";
+  const duration = options.duration ?? 1.6;
+  const spread = options.spread ?? 0.018;
+  const voiceCount = notes.length;
+
+  if (texture === "arpeggio-up") {
+    return slotEvents(notePattern(notes, [0, 1, 2, 3, 4, 5, 6, 7]), duration, 8, voiceCount);
+  }
+
+  if (texture === "arpeggio-down") {
+    return slotEvents(notePattern(notes, [notes.length - 1, notes.length - 2, notes.length - 3, notes.length - 4, notes.length - 5, notes.length - 6, notes.length - 7, notes.length - 8]), duration, 8, voiceCount);
+  }
+
+  if (texture === "alberti") {
+    return slotEvents(albertiPattern(notes), duration, 8, voiceCount);
+  }
+
+  if (texture === "waltz") {
+    return waltzEvents(notes, duration, voiceCount);
+  }
+
+  return notes.map((midi, index) => ({
+    midi,
+    time: index * spread,
+    duration,
+    velocity: 1,
+    voiceCount
+  }));
+}
+
+function slotEvents(pattern, duration, slotCount, voiceCount) {
+  const step = duration / slotCount;
+  return pattern.map((midi, index) => ({
+    midi,
+    time: index * step,
+    duration: step * 1.7,
+    velocity: index === 0 ? 1 : 0.86,
+    voiceCount
+  }));
+}
+
+function notePattern(notes, indexes) {
+  return indexes.map((index) => notes[((index % notes.length) + notes.length) % notes.length]);
+}
+
+function albertiPattern(notes) {
+  if (notes.length === 1) return notePattern(notes, [0, 0, 0, 0, 0, 0, 0, 0]);
+  if (notes.length === 2) return notePattern(notes, [0, 1, 0, 1, 0, 1, 0, 1]);
+  const middleIndexes = notes.length === 3 ? [1, 1] : [1, 2];
+  return notePattern(notes, [0, notes.length - 1, middleIndexes[0], notes.length - 1, 0, notes.length - 1, middleIndexes[1], notes.length - 1]);
+}
+
+function waltzEvents(notes, duration, voiceCount) {
+  const upper = notes.slice(1);
+  const chordNotes = upper.length ? upper : notes;
+  const beats = [0, duration / 3, (duration / 3) * 2];
+  return [
+    {
+      midi: notes[0],
+      time: beats[0],
+      duration: duration / 2.8,
+      velocity: 1,
+      voiceCount
+    },
+    ...chordNotes.map((midi, index) => ({
+      midi,
+      time: beats[1] + index * 0.012,
+      duration: duration / 3,
+      velocity: 0.76,
+      voiceCount
+    })),
+    ...chordNotes.map((midi, index) => ({
+      midi,
+      time: beats[2] + index * 0.012,
+      duration: duration / 3,
+      velocity: 0.68,
+      voiceCount
+    }))
+  ];
 }

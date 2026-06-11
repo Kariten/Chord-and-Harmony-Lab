@@ -16,7 +16,7 @@ import {
   scalePitchClasses,
   scaleUsesFlats
 } from "./chordEngine.js";
-import { playMidiNotes } from "./audio.js";
+import { PLAYBACK_TEXTURES, playMidiNotes } from "./audio.js";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
@@ -35,13 +35,15 @@ const state = {
   midiEnabled: false,
   midiStatus: "",
   analysisView: "tones",
-  guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false"
+  guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
+  texture: localStorage.getItem("chordLabTexture") || "block"
 };
 
 const dom = {
   keySelect: document.querySelector("#keySelect"),
   modeSelect: document.querySelector("#modeSelect"),
   languageSelect: document.querySelector("#languageSelect"),
+  textureSelect: document.querySelector("#textureSelect"),
   triadButton: document.querySelector("#triadButton"),
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
@@ -84,12 +86,20 @@ function init() {
     dom.languageSelect.append(new Option(language.label, language.id));
   });
   dom.languageSelect.value = state.language;
+  renderTextureOptions();
 
   dom.languageSelect.addEventListener("change", () => {
     state.language = dom.languageSelect.value;
     localStorage.setItem("chordLabLanguage", state.language);
     applyStaticTranslations();
     renderModeOptions();
+    renderTextureOptions();
+    render();
+  });
+
+  dom.textureSelect.addEventListener("change", () => {
+    state.texture = dom.textureSelect.value;
+    localStorage.setItem("chordLabTexture", state.texture);
     render();
   });
 
@@ -188,6 +198,17 @@ function renderModeOptions() {
   dom.modeSelect.value = state.modeId;
 }
 
+function renderTextureOptions() {
+  dom.textureSelect.replaceChildren();
+  PLAYBACK_TEXTURES.forEach((texture) => {
+    dom.textureSelect.append(new Option(t(texture.nameKey), texture.id));
+  });
+  if (!PLAYBACK_TEXTURES.some((texture) => texture.id === state.texture)) {
+    state.texture = "block";
+  }
+  dom.textureSelect.value = state.texture;
+}
+
 function render() {
   const key = keyByPc(state.keyPc);
   const mode = modeById(state.modeId);
@@ -202,6 +223,7 @@ function render() {
   dom.seventhButton.classList.toggle("active", state.chordSize === "seventh");
   dom.keySelect.value = String(state.keyPc);
   dom.modeSelect.value = state.modeId;
+  dom.textureSelect.value = state.texture;
   dom.guitarToggle.checked = state.guitarEnabled;
 
   renderMidiControls();
@@ -378,7 +400,7 @@ function renderDegrees(chords) {
     play.textContent = t("play");
     play.addEventListener("click", (event) => {
       event.stopPropagation();
-      playMidiNotes(chordMidiVoicing(chord, 4));
+      playChord(chordMidiVoicing(chord, 4));
     });
 
     card.append(button, play);
@@ -669,12 +691,16 @@ function renderPianoState(activeChord, preferFlats) {
 function playActiveSound() {
   const { values: picked } = activeInputMidis();
   if (picked.length > 0) {
-    playMidiNotes(picked);
+    playChord(picked);
     return;
   }
 
   const chord = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize)[state.selectedDegree];
-  playMidiNotes(centeredChordMidiVoicing(chord));
+  playChord(centeredChordMidiVoicing(chord));
+}
+
+function playChord(midiNotes, options = {}) {
+  playMidiNotes(midiNotes, { ...options, texture: state.texture });
 }
 
 function activeInputMidis() {
@@ -827,7 +853,7 @@ function playProgression() {
     window.setTimeout(() => {
       state.selectedDegree = index;
       render();
-      playMidiNotes(chordMidiVoicing(chord, 4), { duration: 1.25, spread: 0.012 });
+      playChord(chordMidiVoicing(chord, 4), { duration: 1.25, spread: 0.012 });
     }, index * 760);
   });
 }

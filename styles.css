@@ -218,6 +218,10 @@ select {
   flex-basis: 128px;
 }
 
+.texture-field {
+  flex-basis: 152px;
+}
+
 .midi-field {
   flex-basis: 178px;
 }
