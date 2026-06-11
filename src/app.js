@@ -400,7 +400,7 @@ function renderDegrees(chords) {
     play.textContent = t("play");
     play.addEventListener("click", (event) => {
       event.stopPropagation();
-      playChord(chordMidiVoicing(chord, 4));
+      playChord(chordMidiVoicing(chord, 4), { rootPc: chord.rootPc });
     });
 
     card.append(button, play);
@@ -691,12 +691,13 @@ function renderPianoState(activeChord, preferFlats) {
 function playActiveSound() {
   const { values: picked } = activeInputMidis();
   if (picked.length > 0) {
-    playChord(picked);
+    const detected = identifyChord(picked, { preferFlats: scaleUsesFlats(state.keyPc, state.modeId) });
+    playChord(picked, { rootPc: detected.primary?.rootPc });
     return;
   }
 
   const chord = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize)[state.selectedDegree];
-  playChord(centeredChordMidiVoicing(chord));
+  playChord(centeredChordMidiVoicing(chord), { rootPc: chord.rootPc });
 }
 
 function playChord(midiNotes, options = {}) {
@@ -853,7 +854,7 @@ function playProgression() {
     window.setTimeout(() => {
       state.selectedDegree = index;
       render();
-      playChord(chordMidiVoicing(chord, 4), { duration: 1.25, spread: 0.012 });
+      playChord(chordMidiVoicing(chord, 4), { duration: 1.25, spread: 0.012, rootPc: chord.rootPc });
     }, index * 760);
   });
 }
