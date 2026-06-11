@@ -46,8 +46,8 @@ export function playMidiNotes(midiNotes, options = {}) {
 
     osc.type = "triangle";
     overtone.type = "sine";
-    osc.frequency.setValueAtTime(midiToFrequency(midi), start);
-    overtone.frequency.setValueAtTime(midiToFrequency(midi) * 2, start);
+    osc.frequency.setValueAtTime(midiToFrequency(event.midi), start);
+    overtone.frequency.setValueAtTime(midiToFrequency(event.midi) * 2, start);
 
     filter.type = "lowpass";
     filter.frequency.setValueAtTime(1800, start);
