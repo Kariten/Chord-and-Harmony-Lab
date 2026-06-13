@@ -46,6 +46,10 @@ export function moveProgressionItem(items, itemId, targetIndex) {
   return next;
 }
 
+export function shouldUseNativeProgressionDrag(inputCapabilities = {}) {
+  return Boolean(inputCapabilities.anyFinePointer && inputCapabilities.anyHover);
+}
+
 export function removeProgressionItem(items, itemId) {
   return items.filter((item) => item.id !== itemId);
 }

@@ -25,7 +25,8 @@ import {
   createDetectedProgressionItem,
   moveProgressionItem,
   removeProgressionItem,
-  restoreProgressionQueue
+  restoreProgressionQueue,
+  shouldUseNativeProgressionDrag
 } from "./progression.js";
 
 const state = {
@@ -555,7 +556,7 @@ function renderProgressionQueue() {
     chip.className = `progression-item function-${item.functionGroup.toLowerCase()}`;
     chip.classList.toggle("playing", item.id === state.activeQueueItemId);
     chip.dataset.progressionId = item.id;
-    chip.draggable = !isTouchCapableDevice();
+    chip.draggable = nativeProgressionDragEnabled();
     chip.setAttribute("role", "listitem");
     chip.setAttribute("aria-label", t("progressionItemLabel", {
       position: String(index + 1),
@@ -652,8 +653,11 @@ function bindProgressionDrag(chip) {
   chip.addEventListener("touchcancel", finishTouchDrag, { passive: false });
 }
 
-function isTouchCapableDevice() {
-  return navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+function nativeProgressionDragEnabled() {
+  return shouldUseNativeProgressionDrag({
+    anyFinePointer: window.matchMedia?.("(any-pointer: fine)").matches,
+    anyHover: window.matchMedia?.("(any-hover: hover)").matches
+  });
 }
 
 function moveDraggedProgressionChip(chip, clientX, clientY) {

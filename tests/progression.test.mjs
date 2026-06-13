@@ -7,7 +7,8 @@ import {
   functionGroupForRoot,
   moveProgressionItem,
   removeProgressionItem,
-  restoreProgressionQueue
+  restoreProgressionQueue,
+  shouldUseNativeProgressionDrag
 } from "../src/progression.js";
 
 test("classifies diatonic degrees into tonic, subdominant, and dominant groups", () => {
@@ -41,6 +42,23 @@ test("reorders and removes progression items without mutating the source", () =>
   assert.deepEqual(moveProgressionItem(items, "c", 0).map((item) => item.id), ["c", "a", "b"]);
   assert.deepEqual(removeProgressionItem(items, "b").map((item) => item.id), ["a", "c"]);
   assert.deepEqual(items.map((item) => item.id), ["a", "b", "c"]);
+});
+
+test("uses native drag for precise hovering pointers even on touch-capable desktops", () => {
+  assert.equal(shouldUseNativeProgressionDrag({
+    anyFinePointer: true,
+    anyHover: true,
+    maxTouchPoints: 10
+  }), true);
+  assert.equal(shouldUseNativeProgressionDrag({
+    anyFinePointer: false,
+    anyHover: false,
+    maxTouchPoints: 5
+  }), false);
+  assert.equal(shouldUseNativeProgressionDrag({
+    anyFinePointer: true,
+    anyHover: false
+  }), false);
 });
 
 test("restores only valid persisted progression entries", () => {
