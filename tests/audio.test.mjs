@@ -13,8 +13,9 @@ test("provides layered playback textures including the original block chord", ()
       "waltz",
       "bass-syncopation",
       "stride",
-      "sparse-pulse",
-      "charleston",
+      "arpeggio-up-rest",
+      "arpeggio-down-rest",
+      "arpeggio-turn-rest",
       "bass-answer"
     ]
   );
@@ -96,25 +97,40 @@ test("uses the recognized root for bass-led textures when the voicing is inverte
   assert.deepEqual(withRoot.filter((event) => event.velocity > 0.9).map((event) => event.midi), [60, 60]);
 });
 
-test("sparse textures leave audible space at the end of the bar", () => {
+test("short arpeggios play five eighth-note slots followed by three rests", () => {
   const duration = 1.6;
-  const minimumRest = {
-    "sparse-pulse": 0.5,
-    charleston: 0.7,
-    "bass-answer": 0.35
-  };
-
-  Object.entries(minimumRest).forEach(([texture, expectedRest]) => {
+  ["arpeggio-up-rest", "arpeggio-down-rest", "arpeggio-turn-rest"].forEach((texture) => {
     const events = chordPlaybackEvents([60, 64, 67, 71], { texture, duration, rootPc: 0 });
     const lastSoundEnd = Math.max(...events.map((event) => event.time + event.duration));
 
-    assert.ok(duration - lastSoundEnd >= expectedRest, `${texture} should leave a clear ending rest`);
+    assert.equal(events.length, 5);
+    assert.deepEqual(events.map((event) => round(event.time)), [0, 0.2, 0.4, 0.6, 0.8]);
+    assert.ok(duration - lastSoundEnd >= 0.6, `${texture} should leave three eighth-note rest slots`);
     assert.equal(midiPlaybackWindow([60, 64, 67, 71], { texture, duration, rootPc: 0 }).eventEnd, duration);
   });
 });
 
-test("sparse textures keep the same rhythm across triads and seventh chords", () => {
-  ["sparse-pulse", "charleston", "bass-answer"].forEach((texture) => {
+test("short ascending and descending arpeggios continue across octaves", () => {
+  const ascending = chordPlaybackEvents([60, 64, 67], {
+    texture: "arpeggio-up-rest",
+    duration: 1.6
+  });
+  const descending = chordPlaybackEvents([60, 64, 67], {
+    texture: "arpeggio-down-rest",
+    duration: 1.6
+  });
+  const turn = chordPlaybackEvents([60, 64, 67], {
+    texture: "arpeggio-turn-rest",
+    duration: 1.6
+  });
+
+  assert.deepEqual(ascending.map((event) => event.midi), [60, 64, 67, 72, 76]);
+  assert.deepEqual(descending.map((event) => event.midi), [67, 64, 60, 55, 52]);
+  assert.deepEqual(turn.map((event) => event.midi), [60, 64, 67, 72, 67]);
+});
+
+test("short arpeggios keep the same rhythm across triads and seventh chords", () => {
+  ["arpeggio-up-rest", "arpeggio-down-rest", "arpeggio-turn-rest"].forEach((texture) => {
     const triad = chordPlaybackEvents([60, 64, 67], { texture, duration: 1.6, rootPc: 0 });
     const seventh = chordPlaybackEvents([60, 64, 67, 71], { texture, duration: 1.6, rootPc: 0 });
     const triadOnsets = rhythmicSlots(triad, 1.6);
@@ -122,6 +138,15 @@ test("sparse textures keep the same rhythm across triads and seventh chords", ()
 
     assert.deepEqual(triadOnsets, seventhOnsets);
   });
+});
+
+test("bass answer texture keeps a clear ending rest", () => {
+  const duration = 1.6;
+  const events = chordPlaybackEvents([60, 64, 67, 71], { texture: "bass-answer", duration, rootPc: 0 });
+  const lastSoundEnd = Math.max(...events.map((event) => event.time + event.duration));
+
+  assert.ok(duration - lastSoundEnd >= 0.35);
+  assert.equal(midiPlaybackWindow([60, 64, 67, 71], { texture: "bass-answer", duration, rootPc: 0 }).eventEnd, duration);
 });
 
 function rhythmicSlots(events, duration) {

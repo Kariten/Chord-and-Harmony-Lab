@@ -10,8 +10,9 @@ export const PLAYBACK_TEXTURES = [
   { id: "waltz", nameKey: "textureWaltz" },
   { id: "bass-syncopation", nameKey: "textureBassSyncopation" },
   { id: "stride", nameKey: "textureStride" },
-  { id: "sparse-pulse", nameKey: "textureSparsePulse" },
-  { id: "charleston", nameKey: "textureCharleston" },
+  { id: "arpeggio-up-rest", nameKey: "textureArpeggioUpRest" },
+  { id: "arpeggio-down-rest", nameKey: "textureArpeggioDownRest" },
+  { id: "arpeggio-turn-rest", nameKey: "textureArpeggioTurnRest" },
   { id: "bass-answer", nameKey: "textureBassAnswer" }
 ];
 
@@ -118,12 +119,17 @@ export function chordPlaybackEvents(midiNotes, options = {}) {
     return strideEvents(notes, duration, voiceCount, rootPc);
   }
 
-  if (texture === "sparse-pulse") {
-    return sparsePulseEvents(notes, duration, voiceCount);
+  if (texture === "arpeggio-up-rest") {
+    return shortArpeggioEvents(directionalPattern(notes, 5, 1), duration, voiceCount);
   }
 
-  if (texture === "charleston") {
-    return charlestonEvents(notes, duration, voiceCount);
+  if (texture === "arpeggio-down-rest") {
+    return shortArpeggioEvents(directionalPattern(notes, 5, -1), duration, voiceCount);
+  }
+
+  if (texture === "arpeggio-turn-rest") {
+    const rising = directionalPattern(notes, 4, 1);
+    return shortArpeggioEvents([...rising, notes[Math.min(2, notes.length - 1)]], duration, voiceCount);
   }
 
   if (texture === "bass-answer") {
@@ -182,6 +188,28 @@ function stackEvents(notes, time, duration, velocity, voiceCount, spread = 0.012
 
 function notePattern(notes, indexes) {
   return indexes.map((index) => notes[((index % notes.length) + notes.length) % notes.length]);
+}
+
+function directionalPattern(notes, count, direction) {
+  const pattern = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const noteIndex = direction > 0
+      ? index % notes.length
+      : notes.length - 1 - (index % notes.length);
+    let midi = notes[noteIndex];
+
+    if (pattern.length) {
+      const previous = pattern[pattern.length - 1];
+      while (direction > 0 ? midi <= previous : midi >= previous) {
+        midi += direction * 12;
+      }
+    }
+
+    pattern.push(midi);
+  }
+
+  return pattern;
 }
 
 function albertiPattern(notes) {
@@ -261,20 +289,15 @@ function strideEvents(notes, duration, voiceCount, rootPc) {
   return events.sort((a, b) => a.time - b.time || a.midi - b.midi);
 }
 
-function sparsePulseEvents(notes, duration, voiceCount) {
+function shortArpeggioEvents(pattern, duration, voiceCount) {
   const step = duration / 8;
-  return [
-    ...stackEvents(notes, 0, step * 1.45, 0.94, voiceCount),
-    ...stackEvents(notes, step * 4, step * 1.2, 0.76, voiceCount)
-  ].sort((a, b) => a.time - b.time || a.midi - b.midi);
-}
-
-function charlestonEvents(notes, duration, voiceCount) {
-  const step = duration / 8;
-  return [
-    ...stackEvents(notes, 0, step * 1.55, 0.96, voiceCount),
-    ...stackEvents(notes, step * 3, step * 1.2, 0.78, voiceCount)
-  ].sort((a, b) => a.time - b.time || a.midi - b.midi);
+  return pattern.map((midi, index) => ({
+    midi,
+    time: index * step,
+    duration: step * 0.82,
+    velocity: index === 0 ? 1 : 0.84,
+    voiceCount
+  }));
 }
 
 function bassAnswerEvents(notes, duration, voiceCount, rootPc) {
