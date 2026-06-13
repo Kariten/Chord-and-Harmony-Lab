@@ -6,6 +6,7 @@ import {
   functionGroupForDegree,
   functionGroupForRoot,
   moveProgressionItem,
+  progressionPianoHighlight,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
@@ -59,6 +60,19 @@ test("uses native drag for precise hovering pointers even on touch-capable deskt
     anyFinePointer: true,
     anyHover: false
   }), false);
+});
+
+test("builds exact piano highlights for progression playback", () => {
+  assert.deepEqual(progressionPianoHighlight([67, 71, 74, 77, 67], 7), {
+    midis: [67, 71, 74, 77],
+    pitchClasses: [7, 11, 2, 5],
+    rootPc: 7
+  });
+  assert.deepEqual(progressionPianoHighlight([60, 64, Number.NaN], 12), {
+    midis: [60, 64],
+    pitchClasses: [0, 4],
+    rootPc: 0
+  });
 });
 
 test("restores only valid persisted progression entries", () => {

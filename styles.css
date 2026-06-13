@@ -1443,6 +1443,30 @@ select:disabled {
   transform: translateY(4px);
 }
 
+.piano-key.sounding.white {
+  background: linear-gradient(180deg, #bfdbfe, #60a5fa);
+  box-shadow:
+    inset 0 -10px 0 #2563eb,
+    inset 0 0 0 3px rgba(255, 255, 255, 0.9);
+  transform: translateY(4px);
+}
+
+.piano-key.sounding.black {
+  background: linear-gradient(180deg, #2563eb, #172554);
+  box-shadow:
+    inset 0 -8px 0 #60a5fa,
+    inset 0 0 0 3px rgba(255, 255, 255, 0.82);
+  transform: translateY(4px);
+}
+
+.piano-key.root-tone.sounding.white {
+  background: linear-gradient(180deg, #fef3c7, #facc15);
+}
+
+.piano-key.root-tone.sounding.black {
+  background: linear-gradient(180deg, #facc15, #92400e);
+}
+
 @media (min-width: 1000px) and (min-height: 900px) and (max-aspect-ratio: 3/2) {
   .app-shell {
     grid-template-rows: 120px 74px minmax(0, 1fr) 340px;

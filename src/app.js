@@ -30,10 +30,11 @@ import {
   createDegreeProgressionItem,
   createDetectedProgressionItem,
   moveProgressionItem,
+  progressionPianoHighlight,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
-} from "./progression.js";
+} from "./progression.js?v=20260614.1";
 
 const state = {
   language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
@@ -57,6 +58,9 @@ const state = {
   queueTimers: [],
   isPlayingQueue: false,
   activeQueueItemId: "",
+  playbackMidis: new Set(),
+  playbackPitchClasses: new Set(),
+  playbackRootPc: null,
   settingsOpen: false
 };
 
@@ -966,10 +970,15 @@ function renderPiano() {
 function renderPianoState(activeChord, preferFlats) {
   const manualPcs = new Set([...state.pickedMidis].map(pc));
   const midiPcs = new Set([...state.midiActiveMidis].map(pc));
+  const hasPlayback = state.playbackMidis.size > 0;
   const { values } = activeInputMidis();
   const detected = values.length ? identifyChord(values, { preferFlats }) : null;
-  const activePcs = new Set(values.length ? values.map(pc) : activeChord.pitchClasses);
-  const activeRoot = detected?.primary?.rootPc ?? activeChord.rootPc;
+  const activePcs = hasPlayback
+    ? state.playbackPitchClasses
+    : new Set(values.length ? values.map(pc) : activeChord.pitchClasses);
+  const activeRoot = hasPlayback
+    ? state.playbackRootPc
+    : detected?.primary?.rootPc ?? activeChord.rootPc;
 
   dom.piano.querySelectorAll(".piano-key").forEach((button) => {
     const midi = Number(button.dataset.midi);
@@ -986,6 +995,7 @@ function renderPianoState(activeChord, preferFlats) {
     button.classList.toggle("midi-octave", !isMidiNote && isMidiPc);
     button.classList.toggle("current-tone", isChordTone);
     button.classList.toggle("root-tone", pitchClass === activeRoot && isChordTone);
+    button.classList.toggle("sounding", state.playbackMidis.has(midi));
     button.querySelector("span").textContent = noteNameWithOctave(midi, preferFlats);
   });
 }
@@ -1154,6 +1164,7 @@ function clearProgressionTimers() {
   state.progressionTimers.forEach((timer) => window.clearTimeout(timer));
   state.progressionTimers = [];
   state.isPlayingProgression = false;
+  clearPlaybackPianoState();
 }
 
 function clearQueueTimers() {
@@ -1161,6 +1172,20 @@ function clearQueueTimers() {
   state.queueTimers = [];
   state.isPlayingQueue = false;
   state.activeQueueItemId = "";
+  clearPlaybackPianoState();
+}
+
+function setPlaybackPianoState(midiNotes, rootPc) {
+  const highlight = progressionPianoHighlight(midiNotes, rootPc);
+  state.playbackMidis = new Set(highlight.midis);
+  state.playbackPitchClasses = new Set(highlight.pitchClasses);
+  state.playbackRootPc = highlight.rootPc;
+}
+
+function clearPlaybackPianoState() {
+  state.playbackMidis.clear();
+  state.playbackPitchClasses.clear();
+  state.playbackRootPc = null;
 }
 
 function playProgressionQueue() {
@@ -1184,6 +1209,7 @@ function playProgressionQueue() {
     const options = { texture, duration, spread: 0.012, rootPc: item.rootPc };
     const timer = window.setTimeout(() => {
       state.activeQueueItemId = item.id;
+      setPlaybackPianoState(item.midiNotes, item.rootPc);
       render();
       playChord(item.midiNotes, { duration, spread: 0.012, rootPc: item.rootPc });
     }, delay * 1000);
@@ -1196,6 +1222,7 @@ function playProgressionQueue() {
     state.queueTimers = [];
     state.isPlayingQueue = false;
     state.activeQueueItemId = "";
+    clearPlaybackPianoState();
     render();
   }, playbackEnd * 1000);
   state.queueTimers.push(doneTimer);
@@ -1219,6 +1246,7 @@ function playProgression() {
     const options = { texture, duration, spread, rootPc: chord.rootPc };
     const timer = window.setTimeout(() => {
       state.selectedDegree = index;
+      setPlaybackPianoState(midiNotes, chord.rootPc);
       render();
       playChord(midiNotes, { duration, spread, rootPc: chord.rootPc });
     }, delay * 1000);
@@ -1230,6 +1258,7 @@ function playProgression() {
   const doneTimer = window.setTimeout(() => {
     state.progressionTimers = [];
     state.isPlayingProgression = false;
+    clearPlaybackPianoState();
     render();
   }, playbackEnd * 1000);
   state.progressionTimers.push(doneTimer);

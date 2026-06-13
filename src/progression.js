@@ -50,6 +50,15 @@ export function shouldUseNativeProgressionDrag(inputCapabilities = {}) {
   return Boolean(inputCapabilities.anyFinePointer && inputCapabilities.anyHover);
 }
 
+export function progressionPianoHighlight(midiNotes, rootPc) {
+  const midis = [...new Set(midiNotes.filter(Number.isFinite))].sort((a, b) => a - b);
+  return {
+    midis,
+    pitchClasses: [...new Set(midis.map((midi) => ((midi % 12) + 12) % 12))],
+    rootPc: Number.isFinite(rootPc) ? ((rootPc % 12) + 12) % 12 : null
+  };
+}
+
 export function removeProgressionItem(items, itemId) {
   return items.filter((item) => item.id !== itemId);
 }
