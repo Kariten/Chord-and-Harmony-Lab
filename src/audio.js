@@ -1,6 +1,24 @@
 import { midiToFrequency } from "./chordEngine.js";
 
 let audioContext;
+let encodedSamplePromise;
+let decodedSamplePromise;
+let decodedSampleContext;
+let encodedSamples = new Map();
+let decodedSamples = new Map();
+
+const PIANO_RELEASE_SECONDS = 0.68;
+const PIANO_SAMPLE_FILES = [
+  "A0", "C1", "Ds1", "Fs1", "A1", "C2", "Ds2", "Fs2", "A2", "C3",
+  "Ds3", "Fs3", "A3", "C4", "Ds4", "Fs4", "A4", "C5", "Ds5", "Fs5",
+  "A5", "C6", "Ds6", "Fs6", "A6", "C7", "Ds7", "Fs7", "A7", "C8"
+];
+
+export const PIANO_SAMPLES = PIANO_SAMPLE_FILES.map((name, index) => ({
+  name,
+  midi: 21 + index * 3,
+  file: `${name}.mp3`
+}));
 
 export const PLAYBACK_TEXTURES = [
   { id: "block", nameKey: "textureBlock" },
@@ -16,12 +34,20 @@ export const PLAYBACK_TEXTURES = [
   { id: "bass-answer", nameKey: "textureBassAnswer" }
 ];
 
-export function playMidiNotes(midiNotes, options = {}) {
+export async function playMidiNotes(midiNotes, options = {}) {
   const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
   if (!notes.length) return;
 
-  audioContext ??= new AudioContext();
-  const now = audioContext.currentTime;
+  const context = getAudioContext();
+  if (!context) return;
+  if (context.state === "suspended") {
+    try {
+      await context.resume();
+    } catch {
+      return;
+    }
+  }
+
   const duration = options.duration ?? 1.6;
   const events = chordPlaybackEvents(notes, {
     texture: options.texture,
@@ -30,59 +56,175 @@ export function playMidiNotes(midiNotes, options = {}) {
     rootPc: options.rootPc
   });
   const { eventEnd, playbackEnd } = playbackWindow(events, duration);
-  const master = audioContext.createGain();
-  const compressor = audioContext.createDynamicsCompressor();
+  const samples = await ensurePianoSamples(context);
+  const now = context.currentTime + 0.012;
+  const master = context.createGain();
+  const compressor = context.createDynamicsCompressor();
 
   master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.46, now + 0.035);
-  master.gain.setValueAtTime(0.42, now + Math.max(0.04, eventEnd - 0.02));
+  master.gain.exponentialRampToValueAtTime(samples.size ? 0.82 : 0.46, now + 0.018);
+  master.gain.setValueAtTime(samples.size ? 0.78 : 0.42, now + Math.max(0.04, eventEnd));
   master.gain.exponentialRampToValueAtTime(0.0001, now + playbackEnd);
 
-  compressor.threshold.value = -20;
-  compressor.knee.value = 18;
-  compressor.ratio.value = 3;
+  compressor.threshold.value = -18;
+  compressor.knee.value = 16;
+  compressor.ratio.value = 3.5;
   compressor.attack.value = 0.008;
-  compressor.release.value = 0.22;
+  compressor.release.value = 0.3;
 
   master.connect(compressor);
-  compressor.connect(audioContext.destination);
+  compressor.connect(context.destination);
 
   events.forEach((event) => {
-    const start = now + event.time;
-    const stop = now + Math.min(playbackEnd, event.time + event.duration + 0.05);
-    const osc = audioContext.createOscillator();
-    const overtone = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const overtoneGain = audioContext.createGain();
-    const filter = audioContext.createBiquadFilter();
-
-    osc.type = "triangle";
-    overtone.type = "sine";
-    osc.frequency.setValueAtTime(midiToFrequency(event.midi), start);
-    overtone.frequency.setValueAtTime(midiToFrequency(event.midi) * 2, start);
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(1800, start);
-    filter.Q.value = 0.7;
-
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime((0.34 * event.velocity) / Math.sqrt(event.voiceCount), start + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.001, stop);
-
-    overtoneGain.gain.setValueAtTime((0.035 * event.velocity) / Math.sqrt(event.voiceCount), start);
-    overtoneGain.gain.exponentialRampToValueAtTime(0.001, stop);
-
-    osc.connect(gain);
-    overtone.connect(overtoneGain);
-    gain.connect(filter);
-    overtoneGain.connect(filter);
-    filter.connect(master);
-
-    osc.start(start);
-    overtone.start(start);
-    osc.stop(stop);
-    overtone.stop(stop);
+    if (samples.size) {
+      playSampledPianoEvent(context, master, samples, event, now);
+    } else {
+      playSynthFallbackEvent(context, master, event, now, playbackEnd);
+    }
   });
+}
+
+export function preloadPianoSamples() {
+  const context = getAudioContext();
+  if (!context) return Promise.resolve(false);
+  return ensurePianoSamples(context).then((samples) => samples.size > 0);
+}
+
+function loadEncodedPianoSamples() {
+  if (encodedSamplePromise) return encodedSamplePromise;
+  if (typeof fetch !== "function") return Promise.resolve(false);
+
+  encodedSamplePromise = Promise.allSettled(
+    PIANO_SAMPLES.map(async (sample) => {
+      const url = new URL(`../assets/piano/salamander/${sample.file}`, import.meta.url);
+      const response = await fetch(url, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Unable to load piano sample ${sample.file}`);
+      return [sample.midi, await response.arrayBuffer()];
+    })
+  ).then((results) => {
+    encodedSamples = new Map(
+      results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value)
+    );
+    return encodedSamples.size > 0;
+  }).catch(() => false);
+
+  return encodedSamplePromise;
+}
+
+export function pianoSampleForMidi(midi, samples = PIANO_SAMPLES) {
+  if (!samples.length) return null;
+  const sample = samples.reduce((nearest, candidate) => {
+    return Math.abs(candidate.midi - midi) < Math.abs(nearest.midi - midi) ? candidate : nearest;
+  });
+  return {
+    ...sample,
+    playbackRate: 2 ** ((midi - sample.midi) / 12)
+  };
+}
+
+export function pianoSampleStatus() {
+  return {
+    expected: PIANO_SAMPLES.length,
+    encoded: encodedSamples.size,
+    decoded: decodedSamples.size,
+    ready: decodedSamples.size === PIANO_SAMPLES.length
+  };
+}
+
+function getAudioContext() {
+  const AudioContextClass = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  audioContext ??= new AudioContextClass();
+  return audioContext;
+}
+
+async function ensurePianoSamples(context) {
+  if (decodedSampleContext === context && decodedSamples.size) return decodedSamples;
+  if (decodedSampleContext !== context) {
+    decodedSampleContext = context;
+    decodedSamples = new Map();
+    decodedSamplePromise = null;
+  }
+
+  decodedSamplePromise ??= loadEncodedPianoSamples()
+    .then(async () => {
+      const results = await Promise.allSettled(
+        [...encodedSamples].map(async ([midi, data]) => [midi, await context.decodeAudioData(data.slice(0))])
+      );
+      decodedSamples = new Map(
+        results
+          .filter((result) => result.status === "fulfilled")
+          .map((result) => result.value)
+      );
+      return decodedSamples;
+    })
+    .catch(() => new Map());
+
+  return decodedSamplePromise;
+}
+
+function playSampledPianoEvent(context, output, samples, event, now) {
+  const available = PIANO_SAMPLES.filter((sample) => samples.has(sample.midi));
+  const sample = pianoSampleForMidi(event.midi, available);
+  if (!sample) return;
+
+  const start = now + event.time;
+  const releaseStart = start + Math.max(0.12, event.duration);
+  const stop = releaseStart + PIANO_RELEASE_SECONDS;
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  const level = (0.9 * event.velocity) / Math.sqrt(event.voiceCount);
+
+  source.buffer = samples.get(sample.midi);
+  source.playbackRate.setValueAtTime(sample.playbackRate, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(level, start + 0.008);
+  gain.gain.setValueAtTime(level * 0.94, releaseStart);
+  gain.gain.exponentialRampToValueAtTime(0.0001, stop);
+
+  source.connect(gain);
+  gain.connect(output);
+  source.start(start);
+  source.stop(Math.min(stop + 0.04, start + source.buffer.duration / sample.playbackRate));
+}
+
+function playSynthFallbackEvent(context, output, event, now, playbackEnd) {
+  const start = now + event.time;
+  const stop = now + Math.min(playbackEnd, event.time + event.duration + 0.05);
+  const osc = context.createOscillator();
+  const overtone = context.createOscillator();
+  const gain = context.createGain();
+  const overtoneGain = context.createGain();
+  const filter = context.createBiquadFilter();
+
+  osc.type = "triangle";
+  overtone.type = "sine";
+  osc.frequency.setValueAtTime(midiToFrequency(event.midi), start);
+  overtone.frequency.setValueAtTime(midiToFrequency(event.midi) * 2, start);
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(1800, start);
+  filter.Q.value = 0.7;
+
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime((0.34 * event.velocity) / Math.sqrt(event.voiceCount), start + 0.025);
+  gain.gain.exponentialRampToValueAtTime(0.001, stop);
+
+  overtoneGain.gain.setValueAtTime((0.035 * event.velocity) / Math.sqrt(event.voiceCount), start);
+  overtoneGain.gain.exponentialRampToValueAtTime(0.001, stop);
+
+  osc.connect(gain);
+  overtone.connect(overtoneGain);
+  gain.connect(filter);
+  overtoneGain.connect(filter);
+  filter.connect(output);
+
+  osc.start(start);
+  overtone.start(start);
+  osc.stop(stop);
+  overtone.stop(stop);
 }
 
 export function chordPlaybackEvents(midiNotes, options = {}) {
@@ -161,7 +303,7 @@ export function playbackWindow(events, duration) {
   const eventEnd = events.reduce((end, event) => Math.max(end, event.time + event.duration), duration);
   return {
     eventEnd,
-    playbackEnd: eventEnd + 0.12
+    playbackEnd: eventEnd + PIANO_RELEASE_SECONDS
   };
 }
 

@@ -1,6 +1,41 @@
 import assert from "node:assert/strict";
+import { stat } from "node:fs/promises";
 import test from "node:test";
-import { PLAYBACK_TEXTURES, chordPlaybackEvents, midiPlaybackWindow, playbackWindow } from "../src/audio.js";
+import {
+  PIANO_SAMPLES,
+  PLAYBACK_TEXTURES,
+  chordPlaybackEvents,
+  midiPlaybackWindow,
+  pianoSampleForMidi,
+  playbackWindow
+} from "../src/audio.js";
+
+test("covers the full piano range with Salamander sample roots", () => {
+  assert.equal(PIANO_SAMPLES.length, 30);
+  assert.equal(PIANO_SAMPLES[0].midi, 21);
+  assert.equal(PIANO_SAMPLES.at(-1).midi, 108);
+  assert.ok(PIANO_SAMPLES.every((sample, index) => index === 0 || sample.midi - PIANO_SAMPLES[index - 1].midi === 3));
+});
+
+test("bundles every declared piano sample as a non-empty MP3 file", async () => {
+  for (const sample of PIANO_SAMPLES) {
+    const file = new URL(`../assets/piano/salamander/${sample.file}`, import.meta.url);
+    assert.ok((await stat(file)).size > 1000, `${sample.file} should contain audio data`);
+  }
+});
+
+test("maps every note to a nearby sample with the correct playback rate", () => {
+  const exact = pianoSampleForMidi(60);
+  const raised = pianoSampleForMidi(62);
+  const lowered = pianoSampleForMidi(59);
+
+  assert.equal(exact.name, "C4");
+  assert.equal(exact.playbackRate, 1);
+  assert.equal(raised.name, "Ds4");
+  assert.equal(round(raised.playbackRate), round(2 ** (-1 / 12)));
+  assert.equal(lowered.name, "C4");
+  assert.equal(round(lowered.playbackRate), round(2 ** (-1 / 12)));
+});
 
 test("provides layered playback textures including the original block chord", () => {
   assert.deepEqual(
@@ -47,7 +82,7 @@ test("keeps the master release after the final texture note", () => {
   assert.ok(lastEvent.time < 1.6);
   assert.ok(lastEvent.time + lastEvent.duration > 1.6);
   assert.ok(window.eventEnd >= lastEvent.time + lastEvent.duration);
-  assert.ok(window.playbackEnd > window.eventEnd);
+  assert.equal(round(window.playbackEnd - window.eventEnd), 0.68);
 });
 
 test("reports release time beyond the musical bar duration", () => {

@@ -32,6 +32,10 @@ npm test
 4. 顶部齿轮按钮打开全局设置，可切换语言、试听织体、吉他指法和 MIDI 输入。留白型分解织体会演奏五个八分音符，再保留三个八分休止。
 5. “播放级数”会按当前织体连续播放该调式的全部级数和弦。
 
+## 钢琴音源
+
+和弦与琴键试听使用 Salamander Grand Piano 的 Yamaha C5 实录采样，并通过最近采样移调覆盖完整 88 键音域。采样加载失败时会自动切换至内置合成音色，避免影响基础功能。音源采用 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) 许可，详细署名见 [`assets/piano/salamander/ATTRIBUTION.md`](assets/piano/salamander/ATTRIBUTION.md)。
+
 ## 和弦进行编排
 
 1. 点击任意级数和弦卡片右上角的 `+`，将该和弦加入顶部队列。

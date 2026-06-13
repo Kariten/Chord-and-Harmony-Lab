@@ -16,7 +16,13 @@ import {
   scalePitchClasses,
   scaleUsesFlats
 } from "./chordEngine.js";
-import { PLAYBACK_TEXTURES, midiPlaybackWindow, playMidiNotes } from "./audio.js";
+import {
+  PLAYBACK_TEXTURES,
+  midiPlaybackWindow,
+  pianoSampleStatus,
+  playMidiNotes,
+  preloadPianoSamples
+} from "./audio.js";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
@@ -1229,4 +1235,14 @@ function playProgression() {
   state.progressionTimers.push(doneTimer);
 }
 
+preloadPianoSamples().then(() => {
+  const sampleStatus = pianoSampleStatus();
+  document.documentElement.dataset.audioEngine = sampleStatus.ready
+    ? "sampled-piano"
+    : sampleStatus.decoded > 0
+      ? "sampled-piano-partial"
+      : "synth-fallback";
+}).catch(() => {
+  document.documentElement.dataset.audioEngine = "synth-fallback";
+});
 init();
