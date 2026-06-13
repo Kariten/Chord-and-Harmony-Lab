@@ -201,6 +201,7 @@ select {
   cursor: grab;
   touch-action: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .progression-item.function-t {

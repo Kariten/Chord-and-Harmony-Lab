@@ -555,7 +555,7 @@ function renderProgressionQueue() {
     chip.className = `progression-item function-${item.functionGroup.toLowerCase()}`;
     chip.classList.toggle("playing", item.id === state.activeQueueItemId);
     chip.dataset.progressionId = item.id;
-    chip.draggable = true;
+    chip.draggable = !isTouchCapableDevice();
     chip.setAttribute("role", "listitem");
     chip.setAttribute("aria-label", t("progressionItemLabel", {
       position: String(index + 1),
@@ -595,28 +595,68 @@ function bindProgressionDrag(chip) {
     commitProgressionDomOrder();
   });
 
+  let activePointerId = null;
+  let activeTouchId = null;
+
   chip.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "mouse" || event.button !== 0 || event.target.closest("button")) return;
+    if (chip.draggable || event.pointerType === "touch" || event.button !== 0 || event.target.closest("button")) return;
     event.preventDefault();
+    activePointerId = event.pointerId;
     chip.setPointerCapture(event.pointerId);
     chip.classList.add("dragging");
   });
+
   chip.addEventListener("pointermove", (event) => {
-    if (!chip.hasPointerCapture(event.pointerId)) return;
-    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".progression-item");
-    if (target && target !== chip && dom.progressionQueue.contains(target)) {
-      placeDraggedChip(chip, target, event.clientX);
-    }
-    dom.progressionQueue.scrollLeft += progressionEdgeScroll(event.clientX);
+    if (event.pointerId !== activePointerId) return;
+    moveDraggedProgressionChip(chip, event.clientX, event.clientY);
   });
+
   const finishPointerDrag = (event) => {
-    if (!chip.hasPointerCapture(event.pointerId)) return;
-    chip.releasePointerCapture(event.pointerId);
+    if (event.pointerId !== activePointerId) return;
+    if (chip.hasPointerCapture(event.pointerId)) chip.releasePointerCapture(event.pointerId);
+    activePointerId = null;
     chip.classList.remove("dragging");
     commitProgressionDomOrder();
   };
   chip.addEventListener("pointerup", finishPointerDrag);
   chip.addEventListener("pointercancel", finishPointerDrag);
+
+  chip.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1 || event.target.closest("button")) return;
+    event.preventDefault();
+    activeTouchId = event.changedTouches[0].identifier;
+    chip.classList.add("dragging");
+  }, { passive: false });
+
+  chip.addEventListener("touchmove", (event) => {
+    const touch = Array.from(event.touches).find((candidate) => candidate.identifier === activeTouchId);
+    if (!touch) return;
+
+    event.preventDefault();
+    moveDraggedProgressionChip(chip, touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  const finishTouchDrag = (event) => {
+    if (!Array.from(event.changedTouches).some((touch) => touch.identifier === activeTouchId)) return;
+    event.preventDefault();
+    activeTouchId = null;
+    chip.classList.remove("dragging");
+    commitProgressionDomOrder();
+  };
+  chip.addEventListener("touchend", finishTouchDrag, { passive: false });
+  chip.addEventListener("touchcancel", finishTouchDrag, { passive: false });
+}
+
+function isTouchCapableDevice() {
+  return navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+}
+
+function moveDraggedProgressionChip(chip, clientX, clientY) {
+  const target = document.elementFromPoint(clientX, clientY)?.closest(".progression-item");
+  if (target && target !== chip && dom.progressionQueue.contains(target)) {
+    placeDraggedChip(chip, target, clientX);
+  }
+  dom.progressionQueue.scrollLeft += progressionEdgeScroll(clientX);
 }
 
 function placeDraggedChip(dragging, target, clientX) {
