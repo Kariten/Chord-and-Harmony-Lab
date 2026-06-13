@@ -20,6 +20,13 @@ import { PLAYBACK_TEXTURES, midiPlaybackWindow, playMidiNotes } from "./audio.js
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
+import {
+  createDegreeProgressionItem,
+  createDetectedProgressionItem,
+  moveProgressionItem,
+  removeProgressionItem,
+  restoreProgressionQueue
+} from "./progression.js";
 
 const state = {
   language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
@@ -38,7 +45,12 @@ const state = {
   guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
   texture: localStorage.getItem("chordLabTexture") || "block",
   progressionTimers: [],
-  isPlayingProgression: false
+  isPlayingProgression: false,
+  progressionQueue: loadProgressionQueue(),
+  queueTimers: [],
+  isPlayingQueue: false,
+  activeQueueItemId: "",
+  settingsOpen: false
 };
 
 const dom = {
@@ -49,6 +61,14 @@ const dom = {
   triadButton: document.querySelector("#triadButton"),
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
+  progressionQueue: document.querySelector("#progressionQueue"),
+  progressionCount: document.querySelector("#progressionCount"),
+  progressionEmpty: document.querySelector("#progressionEmpty"),
+  playQueue: document.querySelector("#playQueue"),
+  clearQueue: document.querySelector("#clearQueue"),
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsClose: document.querySelector("#settingsClose"),
+  settingsPopover: document.querySelector("#settingsPopover"),
   clearSelection: document.querySelector("#clearSelection"),
   guitarToggle: document.querySelector("#guitarToggle"),
   analysisTabs: document.querySelector(".analysis-tabs"),
@@ -58,6 +78,7 @@ const dom = {
   guitarView: document.querySelector("#guitarView"),
   guitarTipButton: document.querySelector("#guitarTipButton"),
   guitarTipBubble: document.querySelector("#guitarTipBubble"),
+  addDetectedChord: document.querySelector("#addDetectedChord"),
   playSelected: document.querySelector("#playSelected"),
   midiEnable: document.querySelector("#midiEnable"),
   midiInputSelect: document.querySelector("#midiInputSelect"),
@@ -76,6 +97,15 @@ const dom = {
 };
 
 const PIANO_KEYS = pianoKeys(48, 83);
+let progressionId = 0;
+
+function loadProgressionQueue() {
+  try {
+    return restoreProgressionQueue(JSON.parse(localStorage.getItem("chordLabProgression") || "[]"));
+  } catch {
+    return [];
+  }
+}
 
 function init() {
   state.midiStatus = t("midiInitial");
@@ -101,6 +131,7 @@ function init() {
 
   dom.textureSelect.addEventListener("change", () => {
     clearProgressionTimers();
+    clearQueueTimers();
     state.texture = dom.textureSelect.value;
     localStorage.setItem("chordLabTexture", state.texture);
     render();
@@ -135,6 +166,13 @@ function init() {
   });
 
   dom.playProgression.addEventListener("click", playProgression);
+  dom.playQueue.addEventListener("click", playProgressionQueue);
+  dom.clearQueue.addEventListener("click", clearProgressionQueue);
+  dom.settingsButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setSettingsOpen(!state.settingsOpen);
+  });
+  dom.settingsClose.addEventListener("click", () => setSettingsOpen(false));
   dom.toneViewButton.addEventListener("click", () => setAnalysisView("tones"));
   dom.guitarViewButton.addEventListener("click", () => setAnalysisView("guitar"));
   dom.guitarToggle.addEventListener("change", () => {
@@ -150,13 +188,22 @@ function init() {
   });
   dom.guitarTipButton.addEventListener("pointerenter", positionGuitarTip);
   dom.guitarTipButton.addEventListener("focus", positionGuitarTip);
-  document.addEventListener("click", () => setGuitarTipOpen(false));
+  document.addEventListener("click", (event) => {
+    setGuitarTipOpen(false);
+    if (!dom.settingsPopover.contains(event.target) && event.target !== dom.settingsButton) {
+      setSettingsOpen(false);
+    }
+  });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setGuitarTipOpen(false);
+    if (event.key === "Escape") {
+      setGuitarTipOpen(false);
+      setSettingsOpen(false);
+    }
   });
   window.addEventListener("scroll", positionGuitarTip, { passive: true });
   dom.guitarView.addEventListener("scroll", positionGuitarTip, { passive: true });
   dom.playSelected.addEventListener("click", playActiveSound);
+  dom.addDetectedChord.addEventListener("click", addDetectedChordToProgression);
   dom.midiEnable.addEventListener("click", enableMidi);
   dom.midiInputSelect.addEventListener("change", () => {
     connectMidiInput(dom.midiInputSelect.value);
@@ -233,7 +280,11 @@ function render() {
   dom.textureSelect.value = state.texture;
   dom.playProgression.disabled = state.isPlayingProgression;
   dom.guitarToggle.checked = state.guitarEnabled;
+  dom.playQueue.disabled = state.progressionQueue.length === 0 || state.isPlayingQueue;
+  dom.clearQueue.disabled = state.progressionQueue.length === 0;
 
+  renderProgressionQueue();
+  renderSettings();
   renderMidiControls();
   renderAnalysisTabs();
   renderDegrees(chords);
@@ -386,6 +437,16 @@ function renderDegrees(chords) {
     card.classList.toggle("active", index === state.selectedDegree);
     card.style.setProperty("--degree-color", chord.color);
 
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "degree-add-button";
+    add.textContent = "+";
+    add.setAttribute("aria-label", t("addChordNamed", { name: chord.name }));
+    add.addEventListener("click", (event) => {
+      event.stopPropagation();
+      addDegreeChordToProgression(chord);
+    });
+
     const button = document.createElement("button");
     button.type = "button";
     button.className = "degree-main";
@@ -411,11 +472,181 @@ function renderDegrees(chords) {
       playChord(chordMidiVoicing(chord, 4), { rootPc: chord.rootPc });
     });
 
-    card.append(button, play);
+    card.append(add, button, play);
     dom.degreeGrid.append(card);
   });
 
   scheduleFitDegreeNames();
+}
+
+function addDegreeChordToProgression(chord) {
+  const midiNotes = chordMidiVoicing(chord, 4);
+  addProgressionItem(createDegreeProgressionItem(chord, midiNotes, nextProgressionId()));
+}
+
+function addDetectedChordToProgression() {
+  const { values } = activeInputMidis();
+  if (values.length === 0) return;
+
+  const preferFlats = scaleUsesFlats(state.keyPc, state.modeId);
+  const detected = identifyChord(values, { preferFlats });
+  if (detected.status !== "exact") return;
+
+  const scale = scalePitchClasses(state.keyPc, state.modeId);
+  addProgressionItem(createDetectedProgressionItem(detected.primary, values, scale, nextProgressionId()));
+}
+
+function addProgressionItem(item) {
+  clearQueueTimers();
+  state.progressionQueue = [...state.progressionQueue, item];
+  saveProgressionQueue();
+  render();
+  dom.progressionQueue.scrollTo({ left: dom.progressionQueue.scrollWidth, behavior: "smooth" });
+}
+
+function removeProgressionChord(itemId) {
+  clearQueueTimers();
+  state.progressionQueue = removeProgressionItem(state.progressionQueue, itemId);
+  saveProgressionQueue();
+  render();
+}
+
+function clearProgressionQueue() {
+  clearQueueTimers();
+  state.progressionQueue = [];
+  saveProgressionQueue();
+  render();
+}
+
+function nextProgressionId() {
+  progressionId += 1;
+  return `${Date.now().toString(36)}-${progressionId.toString(36)}`;
+}
+
+function saveProgressionQueue() {
+  localStorage.setItem("chordLabProgression", JSON.stringify(state.progressionQueue));
+}
+
+function renderProgressionQueue() {
+  dom.progressionQueue.replaceChildren();
+  dom.progressionCount.textContent = String(state.progressionQueue.length);
+
+  if (state.progressionQueue.length === 0) {
+    dom.progressionEmpty.textContent = t("progressionEmpty");
+    dom.progressionQueue.append(dom.progressionEmpty);
+    return;
+  }
+
+  state.progressionQueue.forEach((item, index) => {
+    const chip = document.createElement("div");
+    chip.className = `progression-item function-${item.functionGroup.toLowerCase()}`;
+    chip.classList.toggle("playing", item.id === state.activeQueueItemId);
+    chip.dataset.progressionId = item.id;
+    chip.draggable = true;
+    chip.setAttribute("role", "listitem");
+    chip.setAttribute("aria-label", t("progressionItemLabel", {
+      position: String(index + 1),
+      name: item.symbol,
+      function: item.functionGroup
+    }));
+
+    const grip = document.createElement("span");
+    grip.className = "progression-grip";
+    grip.textContent = "⋮⋮";
+    grip.setAttribute("aria-hidden", "true");
+
+    const functionLabel = document.createElement("span");
+    functionLabel.className = "progression-function";
+    functionLabel.textContent = item.functionGroup;
+
+    const name = document.createElement("strong");
+    name.textContent = item.symbol;
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "progression-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", t("removeChordNamed", { name: item.symbol }));
+    remove.addEventListener("click", () => removeProgressionChord(item.id));
+
+    chip.append(grip, functionLabel, name, remove);
+    bindProgressionDrag(chip, grip);
+    dom.progressionQueue.append(chip);
+  });
+}
+
+function bindProgressionDrag(chip, grip) {
+  chip.addEventListener("dragstart", (event) => {
+    chip.classList.add("dragging");
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", chip.dataset.progressionId);
+  });
+  chip.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const dragging = dom.progressionQueue.querySelector(".progression-item.dragging");
+    if (dragging && dragging !== chip) placeDraggedChip(dragging, chip, event.clientX);
+  });
+  chip.addEventListener("dragend", () => {
+    chip.classList.remove("dragging");
+    commitProgressionDomOrder();
+  });
+
+  grip.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    grip.setPointerCapture(event.pointerId);
+    chip.classList.add("dragging");
+  });
+  grip.addEventListener("pointermove", (event) => {
+    if (!grip.hasPointerCapture(event.pointerId)) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".progression-item");
+    if (target && target !== chip && dom.progressionQueue.contains(target)) {
+      placeDraggedChip(chip, target, event.clientX);
+    }
+    dom.progressionQueue.scrollLeft += progressionEdgeScroll(event.clientX);
+  });
+  const finishPointerDrag = (event) => {
+    if (!grip.hasPointerCapture(event.pointerId)) return;
+    grip.releasePointerCapture(event.pointerId);
+    chip.classList.remove("dragging");
+    commitProgressionDomOrder();
+  };
+  grip.addEventListener("pointerup", finishPointerDrag);
+  grip.addEventListener("pointercancel", finishPointerDrag);
+}
+
+function placeDraggedChip(dragging, target, clientX) {
+  const rect = target.getBoundingClientRect();
+  const after = clientX > rect.left + rect.width / 2;
+  dom.progressionQueue.insertBefore(dragging, after ? target.nextSibling : target);
+}
+
+function progressionEdgeScroll(clientX) {
+  const rect = dom.progressionQueue.getBoundingClientRect();
+  if (clientX < rect.left + 42) return -12;
+  if (clientX > rect.right - 42) return 12;
+  return 0;
+}
+
+function commitProgressionDomOrder() {
+  const orderedIds = [...dom.progressionQueue.querySelectorAll(".progression-item")].map((item) => item.dataset.progressionId);
+  let next = [...state.progressionQueue];
+  orderedIds.forEach((itemId, index) => {
+    next = moveProgressionItem(next, itemId, index);
+  });
+  state.progressionQueue = next;
+  saveProgressionQueue();
+  render();
+}
+
+function setSettingsOpen(open) {
+  state.settingsOpen = Boolean(open);
+  renderSettings();
+}
+
+function renderSettings() {
+  dom.settingsPopover.hidden = !state.settingsOpen;
+  dom.settingsButton.setAttribute("aria-expanded", String(state.settingsOpen));
 }
 
 function scheduleFitDegreeNames() {
@@ -441,6 +672,7 @@ function renderAnalysis(activeChord, preferFlats) {
   const manual = identifyChord(picked, { preferFlats });
 
   if (picked.length === 0) {
+    dom.addDetectedChord.hidden = true;
     dom.manualNotes.textContent = t("currentDegree", { notes: activeChord.notes.join("  ") });
     dom.detectedName.classList.remove("unmatched");
     dom.detectedName.textContent = activeChord.name;
@@ -459,6 +691,8 @@ function renderAnalysis(activeChord, preferFlats) {
   dom.manualNotes.textContent = `${source}：${manual.displayNotes.join("  ")}`;
 
   if (manual.status === "exact") {
+    dom.addDetectedChord.hidden = false;
+    dom.addDetectedChord.setAttribute("aria-label", t("addChordNamed", { name: manual.primary.symbol }));
     dom.detectedName.classList.remove("unmatched");
     dom.detectedName.textContent = manual.primary.symbol;
     dom.detectedFormula.textContent = `${manual.primary.quality}｜${manual.primary.intervalLabels.join("  ")}`;
@@ -473,6 +707,7 @@ function renderAnalysis(activeChord, preferFlats) {
     return;
   }
 
+  dom.addDetectedChord.hidden = true;
   dom.detectedName.classList.add("unmatched");
   dom.detectedName.textContent = t("unknownChord");
   dom.detectedFormula.textContent = t("keepAdding");
@@ -862,7 +1097,53 @@ function clearProgressionTimers() {
   state.isPlayingProgression = false;
 }
 
+function clearQueueTimers() {
+  state.queueTimers.forEach((timer) => window.clearTimeout(timer));
+  state.queueTimers = [];
+  state.isPlayingQueue = false;
+  state.activeQueueItemId = "";
+}
+
+function playProgressionQueue() {
+  if (state.progressionQueue.length === 0) return;
+  clearProgressionTimers();
+  clearQueueTimers();
+
+  const queue = state.progressionQueue.map((item) => ({
+    ...item,
+    midiNotes: [...item.midiNotes]
+  }));
+  const texture = state.texture;
+  const duration = 1.6;
+  let delay = 0;
+  let playbackEnd = 0;
+
+  state.isPlayingQueue = true;
+  render();
+
+  queue.forEach((item) => {
+    const options = { texture, duration, spread: 0.012, rootPc: item.rootPc };
+    const timer = window.setTimeout(() => {
+      state.activeQueueItemId = item.id;
+      render();
+      playChord(item.midiNotes, { duration, spread: 0.012, rootPc: item.rootPc });
+    }, delay * 1000);
+    state.queueTimers.push(timer);
+    playbackEnd = delay + midiPlaybackWindow(item.midiNotes, options).playbackEnd;
+    delay += duration;
+  });
+
+  const doneTimer = window.setTimeout(() => {
+    state.queueTimers = [];
+    state.isPlayingQueue = false;
+    state.activeQueueItemId = "";
+    render();
+  }, playbackEnd * 1000);
+  state.queueTimers.push(doneTimer);
+}
+
 function playProgression() {
+  clearQueueTimers();
   clearProgressionTimers();
   const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
   const texture = state.texture;

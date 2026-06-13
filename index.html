@@ -19,27 +19,50 @@
         </div>
       </section>
 
-      <section class="control-band" aria-label="全局设置" data-i18n-attr="aria-label:globalSettings">
-        <label class="field language-field">
-          <span data-i18n="language">语言</span>
-          <select id="languageSelect"></select>
-        </label>
-        <label class="field texture-field">
-          <span data-i18n="texture">织体</span>
-          <select id="textureSelect"></select>
-        </label>
-        <label class="switch-field guitar-switch-field">
-          <span data-i18n="guitarReference">吉他指法</span>
-          <input id="guitarToggle" type="checkbox" checked />
-          <i aria-hidden="true"></i>
-        </label>
-        <label class="field midi-field">
-          <span data-i18n="midiInput">MIDI 输入</span>
-          <select id="midiInputSelect" disabled>
-            <option value="" data-i18n="midiInitial">未启用</option>
-          </select>
-        </label>
-        <button id="midiEnable" class="command midi-command" type="button" data-i18n="enableMidi">启用 MIDI</button>
+      <section class="control-band" aria-label="和弦进行工作区" data-i18n-attr="aria-label:progressionWorkspace">
+        <div class="progression-heading">
+          <strong data-i18n="progression">和弦进行</strong>
+          <span id="progressionCount">0</span>
+        </div>
+        <div id="progressionQueue" class="progression-queue" role="list" aria-label="和弦进行队列" data-i18n-attr="aria-label:progressionQueue">
+          <p id="progressionEmpty" class="progression-empty" data-i18n="progressionEmpty">点击和弦卡片上的加号开始编排</p>
+        </div>
+        <div class="progression-actions">
+          <button id="playQueue" class="queue-command primary" type="button" data-i18n="playQueue">播放进行</button>
+          <button id="clearQueue" class="queue-command quiet" type="button" data-i18n="clearQueue">清空</button>
+          <span class="progression-action-divider" aria-hidden="true"></span>
+          <button id="settingsButton" class="settings-button" type="button" aria-expanded="false" aria-controls="settingsPopover" aria-label="全局设置" data-i18n-attr="aria-label:globalSettings">
+            <img src="./设置.svg" alt="" aria-hidden="true" />
+          </button>
+        </div>
+        <div id="settingsPopover" class="settings-popover" hidden>
+          <div class="settings-heading">
+            <strong data-i18n="globalSettings">全局设置</strong>
+            <button id="settingsClose" class="settings-close" type="button" aria-label="关闭设置" data-i18n-attr="aria-label:closeSettings">×</button>
+          </div>
+          <div class="settings-grid">
+            <label class="field language-field">
+              <span data-i18n="language">语言</span>
+              <select id="languageSelect"></select>
+            </label>
+            <label class="field texture-field">
+              <span data-i18n="texture">织体</span>
+              <select id="textureSelect"></select>
+            </label>
+            <label class="switch-field guitar-switch-field">
+              <span data-i18n="guitarReference">吉他指法</span>
+              <input id="guitarToggle" type="checkbox" checked />
+              <i aria-hidden="true"></i>
+            </label>
+            <label class="field midi-field">
+              <span data-i18n="midiInput">MIDI 输入</span>
+              <select id="midiInputSelect" disabled>
+                <option value="" data-i18n="midiInitial">未启用</option>
+              </select>
+            </label>
+            <button id="midiEnable" class="command midi-command" type="button" data-i18n="enableMidi">启用 MIDI</button>
+          </div>
+        </div>
       </section>
 
       <section class="workspace-grid">
@@ -87,7 +110,10 @@
               </div>
               <div class="detected-line">
                 <strong id="detectedName" class="detected-name">-</strong>
-                <button id="playSelected" class="command primary analysis-play-button" type="button" data-i18n="play">试听</button>
+                <div class="detected-actions">
+                  <button id="addDetectedChord" class="add-chord-button" type="button" aria-label="添加和弦" data-i18n-attr="aria-label:addChord">+</button>
+                  <button id="playSelected" class="command primary analysis-play-button" type="button" data-i18n="play">试听</button>
+                </div>
               </div>
               <p id="detectedFormula" class="formula-line" data-i18n="pickKeysHint">在下方钢琴点选音符后自动识别。</p>
             </div>
