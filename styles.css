@@ -301,6 +301,12 @@ select {
   color: #dc2626;
 }
 
+.progression-remove-glyph {
+  display: block;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
 .progression-actions {
   display: flex;
   align-items: center;

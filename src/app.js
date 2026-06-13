@@ -569,9 +569,14 @@ function renderProgressionQueue() {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "progression-remove";
-    remove.textContent = "\u00d7";
     remove.setAttribute("aria-label", t("removeChordNamed", { name: item.symbol }));
     remove.addEventListener("click", () => removeProgressionChord(item.id));
+
+    const removeGlyph = document.createElement("span");
+    removeGlyph.className = "progression-remove-glyph";
+    removeGlyph.textContent = "\u00d7";
+    removeGlyph.setAttribute("aria-hidden", "true");
+    remove.append(removeGlyph);
 
     chip.append(name, remove);
     bindProgressionDrag(chip);
