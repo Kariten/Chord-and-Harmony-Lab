@@ -9,7 +9,10 @@ export const PLAYBACK_TEXTURES = [
   { id: "alberti", nameKey: "textureAlberti" },
   { id: "waltz", nameKey: "textureWaltz" },
   { id: "bass-syncopation", nameKey: "textureBassSyncopation" },
-  { id: "stride", nameKey: "textureStride" }
+  { id: "stride", nameKey: "textureStride" },
+  { id: "sparse-pulse", nameKey: "textureSparsePulse" },
+  { id: "charleston", nameKey: "textureCharleston" },
+  { id: "bass-answer", nameKey: "textureBassAnswer" }
 ];
 
 export function playMidiNotes(midiNotes, options = {}) {
@@ -113,6 +116,18 @@ export function chordPlaybackEvents(midiNotes, options = {}) {
 
   if (texture === "stride") {
     return strideEvents(notes, duration, voiceCount, rootPc);
+  }
+
+  if (texture === "sparse-pulse") {
+    return sparsePulseEvents(notes, duration, voiceCount);
+  }
+
+  if (texture === "charleston") {
+    return charlestonEvents(notes, duration, voiceCount);
+  }
+
+  if (texture === "bass-answer") {
+    return bassAnswerEvents(notes, duration, voiceCount, rootPc);
   }
 
   return notes.map((midi, index) => ({
@@ -244,6 +259,35 @@ function strideEvents(notes, duration, voiceCount, rootPc) {
   });
 
   return events.sort((a, b) => a.time - b.time || a.midi - b.midi);
+}
+
+function sparsePulseEvents(notes, duration, voiceCount) {
+  const step = duration / 8;
+  return [
+    ...stackEvents(notes, 0, step * 1.45, 0.94, voiceCount),
+    ...stackEvents(notes, step * 4, step * 1.2, 0.76, voiceCount)
+  ].sort((a, b) => a.time - b.time || a.midi - b.midi);
+}
+
+function charlestonEvents(notes, duration, voiceCount) {
+  const step = duration / 8;
+  return [
+    ...stackEvents(notes, 0, step * 1.55, 0.96, voiceCount),
+    ...stackEvents(notes, step * 3, step * 1.2, 0.78, voiceCount)
+  ].sort((a, b) => a.time - b.time || a.midi - b.midi);
+}
+
+function bassAnswerEvents(notes, duration, voiceCount, rootPc) {
+  const step = duration / 8;
+  const bass = lowBassNote(rootMidi(notes, rootPc));
+  const bassAlternate = lowBassNote(alternateBassMidi(notes, rootPc));
+  const upper = upperChordNotes(notes, bass);
+  return [
+    ...stackEvents([bass], 0, step * 1.8, 1, voiceCount),
+    ...stackEvents(upper, step * 2, step * 1.3, 0.76, voiceCount),
+    ...stackEvents([bassAlternate], step * 4, step * 1.45, 0.88, voiceCount),
+    ...stackEvents(upper, step * 5, step, 0.7, voiceCount)
+  ].sort((a, b) => a.time - b.time || a.midi - b.midi);
 }
 
 function lowBassNote(midi) {

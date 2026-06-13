@@ -5,7 +5,18 @@ import { PLAYBACK_TEXTURES, chordPlaybackEvents, midiPlaybackWindow, playbackWin
 test("provides layered playback textures including the original block chord", () => {
   assert.deepEqual(
     PLAYBACK_TEXTURES.map((texture) => texture.id),
-    ["block", "arpeggio-up", "arpeggio-down", "alberti", "waltz", "bass-syncopation", "stride"]
+    [
+      "block",
+      "arpeggio-up",
+      "arpeggio-down",
+      "alberti",
+      "waltz",
+      "bass-syncopation",
+      "stride",
+      "sparse-pulse",
+      "charleston",
+      "bass-answer"
+    ]
   );
 });
 
@@ -84,6 +95,39 @@ test("uses the recognized root for bass-led textures when the voicing is inverte
   assert.deepEqual(withoutRoot.filter((event) => event.velocity > 0.9).map((event) => event.midi), [52, 52]);
   assert.deepEqual(withRoot.filter((event) => event.velocity > 0.9).map((event) => event.midi), [60, 60]);
 });
+
+test("sparse textures leave audible space at the end of the bar", () => {
+  const duration = 1.6;
+  const minimumRest = {
+    "sparse-pulse": 0.5,
+    charleston: 0.7,
+    "bass-answer": 0.35
+  };
+
+  Object.entries(minimumRest).forEach(([texture, expectedRest]) => {
+    const events = chordPlaybackEvents([60, 64, 67, 71], { texture, duration, rootPc: 0 });
+    const lastSoundEnd = Math.max(...events.map((event) => event.time + event.duration));
+
+    assert.ok(duration - lastSoundEnd >= expectedRest, `${texture} should leave a clear ending rest`);
+    assert.equal(midiPlaybackWindow([60, 64, 67, 71], { texture, duration, rootPc: 0 }).eventEnd, duration);
+  });
+});
+
+test("sparse textures keep the same rhythm across triads and seventh chords", () => {
+  ["sparse-pulse", "charleston", "bass-answer"].forEach((texture) => {
+    const triad = chordPlaybackEvents([60, 64, 67], { texture, duration: 1.6, rootPc: 0 });
+    const seventh = chordPlaybackEvents([60, 64, 67, 71], { texture, duration: 1.6, rootPc: 0 });
+    const triadOnsets = rhythmicSlots(triad, 1.6);
+    const seventhOnsets = rhythmicSlots(seventh, 1.6);
+
+    assert.deepEqual(triadOnsets, seventhOnsets);
+  });
+});
+
+function rhythmicSlots(events, duration) {
+  const step = duration / 8;
+  return [...new Set(events.map((event) => Math.round(event.time / step)))];
+}
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
