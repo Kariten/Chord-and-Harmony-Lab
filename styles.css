@@ -893,6 +893,7 @@ select:disabled {
   flex: 0 0 auto;
   width: 24px;
   height: 22px;
+  margin-top: -10px;
   padding: 0;
   border: 0;
   background: transparent;
