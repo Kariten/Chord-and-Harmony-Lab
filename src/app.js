@@ -550,32 +550,23 @@ function renderProgressionQueue() {
       function: item.functionGroup
     }));
 
-    const grip = document.createElement("span");
-    grip.className = "progression-grip";
-    grip.textContent = "⋮⋮";
-    grip.setAttribute("aria-hidden", "true");
-
-    const functionLabel = document.createElement("span");
-    functionLabel.className = "progression-function";
-    functionLabel.textContent = item.functionGroup;
-
     const name = document.createElement("strong");
     name.textContent = item.symbol;
 
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "progression-remove";
-    remove.textContent = "×";
+    remove.textContent = "\u00d7";
     remove.setAttribute("aria-label", t("removeChordNamed", { name: item.symbol }));
     remove.addEventListener("click", () => removeProgressionChord(item.id));
 
-    chip.append(grip, functionLabel, name, remove);
-    bindProgressionDrag(chip, grip);
+    chip.append(name, remove);
+    bindProgressionDrag(chip);
     dom.progressionQueue.append(chip);
   });
 }
 
-function bindProgressionDrag(chip, grip) {
+function bindProgressionDrag(chip) {
   chip.addEventListener("dragstart", (event) => {
     chip.classList.add("dragging");
     event.dataTransfer.effectAllowed = "move";
@@ -591,14 +582,14 @@ function bindProgressionDrag(chip, grip) {
     commitProgressionDomOrder();
   });
 
-  grip.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
+  chip.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" || event.button !== 0 || event.target.closest("button")) return;
     event.preventDefault();
-    grip.setPointerCapture(event.pointerId);
+    chip.setPointerCapture(event.pointerId);
     chip.classList.add("dragging");
   });
-  grip.addEventListener("pointermove", (event) => {
-    if (!grip.hasPointerCapture(event.pointerId)) return;
+  chip.addEventListener("pointermove", (event) => {
+    if (!chip.hasPointerCapture(event.pointerId)) return;
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".progression-item");
     if (target && target !== chip && dom.progressionQueue.contains(target)) {
       placeDraggedChip(chip, target, event.clientX);
@@ -606,13 +597,13 @@ function bindProgressionDrag(chip, grip) {
     dom.progressionQueue.scrollLeft += progressionEdgeScroll(event.clientX);
   });
   const finishPointerDrag = (event) => {
-    if (!grip.hasPointerCapture(event.pointerId)) return;
-    grip.releasePointerCapture(event.pointerId);
+    if (!chip.hasPointerCapture(event.pointerId)) return;
+    chip.releasePointerCapture(event.pointerId);
     chip.classList.remove("dragging");
     commitProgressionDomOrder();
   };
-  grip.addEventListener("pointerup", finishPointerDrag);
-  grip.addEventListener("pointercancel", finishPointerDrag);
+  chip.addEventListener("pointerup", finishPointerDrag);
+  chip.addEventListener("pointercancel", finishPointerDrag);
 }
 
 function placeDraggedChip(dragging, target, clientX) {

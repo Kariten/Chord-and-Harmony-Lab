@@ -189,18 +189,17 @@ select {
   --function-color: var(--function-n);
   --function-bg: #f1f5f9;
   position: relative;
-  display: grid;
-  grid-template-columns: 14px 22px minmax(48px, auto) 22px;
+  display: flex;
   align-items: center;
-  gap: 5px;
   flex: 0 0 auto;
-  height: 46px;
-  padding: 4px 5px 4px 7px;
+  height: 40px;
+  padding: 5px 13px;
   border: 2px solid var(--function-color);
   border-radius: 7px;
   background: var(--function-bg);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
   cursor: grab;
+  touch-action: none;
   user-select: none;
 }
 
@@ -248,27 +247,6 @@ select {
   box-shadow: 0 0 0 3px #facc15, 0 8px 18px rgba(15, 23, 42, 0.16);
 }
 
-.progression-grip {
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: -3px;
-  cursor: grab;
-  touch-action: none;
-}
-
-.progression-function {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: var(--function-color);
-  color: white;
-  font-size: 11px;
-  font-weight: 950;
-}
-
 .progression-item strong {
   max-width: 126px;
   overflow: hidden;
@@ -292,14 +270,33 @@ select {
 }
 
 .progression-remove {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: white;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.82);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.progression-item:hover .progression-remove,
+.progression-item:focus-within .progression-remove {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
 .progression-remove:hover,
 .progression-remove:focus-visible {
-  background: rgba(15, 23, 42, 0.09);
+  border-color: #fca5a5;
+  background: #fff1f2;
   color: #dc2626;
 }
 
@@ -366,7 +363,7 @@ select {
   z-index: 50;
   top: calc(100% + 8px);
   right: 0;
-  width: min(680px, calc(100vw - 24px));
+  width: min(840px, calc(100vw - 24px));
   padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -397,7 +394,7 @@ select {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: minmax(118px, 0.8fr) minmax(146px, 1fr) auto minmax(165px, 1.15fr) minmax(90px, 0.55fr);
+  grid-template-columns: minmax(130px, 0.85fr) minmax(160px, 1fr) minmax(150px, auto) minmax(180px, 1.15fr) minmax(96px, 0.55fr);
   gap: 8px;
   align-items: center;
 }
@@ -709,15 +706,13 @@ select:disabled {
   box-shadow: 0 16px 30px rgba(17, 24, 39, 0.16);
 }
 
-.degree-add-button,
-.add-chord-button {
+.degree-add-button {
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(37, 99, 235, 0.36);
-  border-radius: 6px;
-  background: #eff6ff;
-  color: var(--blue);
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
   font-weight: 950;
   cursor: pointer;
 }
@@ -727,18 +722,16 @@ select:disabled {
   z-index: 3;
   top: 12px;
   right: 8px;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   font-size: 21px;
   line-height: 1;
 }
 
 .degree-add-button:hover,
-.degree-add-button:focus-visible,
-.add-chord-button:hover,
-.add-chord-button:focus-visible {
-  border-color: var(--blue);
-  background: #dbeafe;
+.degree-add-button:focus-visible {
+  background: transparent;
+  color: #475569;
 }
 
 .degree-main {
@@ -860,10 +853,15 @@ select:disabled {
 }
 
 .analysis-note-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
 }
 
 .note-row {
+  flex: 1 1 auto;
   min-height: 22px;
   margin: 0;
   color: #bfdbfe;
@@ -889,9 +887,24 @@ select:disabled {
 }
 
 .add-chord-button {
-  width: 32px;
-  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: white;
   font-size: 21px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.add-chord-button:hover,
+.add-chord-button:focus-visible {
+  color: #bfdbfe;
 }
 
 .add-chord-button[hidden] {
@@ -1864,5 +1877,13 @@ select:disabled {
 
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (hover: none) {
+  .progression-remove {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
   }
 }
