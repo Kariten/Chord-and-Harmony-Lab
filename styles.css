@@ -868,6 +868,7 @@ select:disabled {
   font-size: 16px;
   font-weight: 800;
   line-height: 1.15;
+  transform: translateY(1px);
   overflow-wrap: anywhere;
 }
 
@@ -899,7 +900,6 @@ select:disabled {
   font-size: 21px;
   font-weight: 950;
   line-height: 22px;
-  transform: translateY(1px);
   cursor: pointer;
 }
 
