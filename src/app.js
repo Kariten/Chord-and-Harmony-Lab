@@ -61,6 +61,8 @@ const dom = {
   triadButton: document.querySelector("#triadButton"),
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
+  controlBand: document.querySelector(".control-band"),
+  progressionTitle: document.querySelector(".progression-heading strong"),
   progressionQueue: document.querySelector("#progressionQueue"),
   progressionCount: document.querySelector("#progressionCount"),
   progressionEmpty: document.querySelector("#progressionEmpty"),
@@ -120,14 +122,8 @@ function init() {
   dom.languageSelect.value = state.language;
   renderTextureOptions();
 
-  dom.languageSelect.addEventListener("change", () => {
-    state.language = dom.languageSelect.value;
-    localStorage.setItem("chordLabLanguage", state.language);
-    applyStaticTranslations();
-    renderModeOptions();
-    renderTextureOptions();
-    render();
-  });
+  dom.languageSelect.addEventListener("input", updateLanguageFromControl);
+  dom.languageSelect.addEventListener("change", updateLanguageFromControl);
 
   dom.textureSelect.addEventListener("change", () => {
     clearProgressionTimers();
@@ -226,6 +222,18 @@ function init() {
 
 function t(key, values) {
   return translate(state.language, key, values);
+}
+
+function updateLanguageFromControl() {
+  const nextLanguage = dom.languageSelect.value;
+  if (nextLanguage === state.language) return;
+
+  state.language = nextLanguage;
+  localStorage.setItem("chordLabLanguage", state.language);
+  applyStaticTranslations();
+  renderModeOptions();
+  renderTextureOptions();
+  render();
 }
 
 function applyStaticTranslations() {
@@ -528,6 +536,11 @@ function saveProgressionQueue() {
 }
 
 function renderProgressionQueue() {
+  dom.progressionTitle.textContent = t("progression");
+  dom.playQueue.textContent = t("playQueue");
+  dom.clearQueue.textContent = t("clearQueue");
+  dom.controlBand.setAttribute("aria-label", t("progressionWorkspace"));
+  dom.progressionQueue.setAttribute("aria-label", t("progressionQueue"));
   dom.progressionQueue.replaceChildren();
   dom.progressionCount.textContent = String(state.progressionQueue.length);
 
