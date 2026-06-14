@@ -30,3 +30,10 @@ test("dark action buttons keep AA contrast with white text", () => {
   assert.match(styles, /\.command\.primary\s*\{[^}]*background:\s*var\(--action-green\)/s);
   assert.match(styles, /\.queue-command\.primary\s*\{[^}]*background:\s*var\(--action-green\)/s);
 });
+
+test("dark progression playback preserves the yellow active ring", () => {
+  assert.match(
+    styles,
+    /html\[data-theme="dark"\]\s+\.progression-item\.playing\s*\{[^}]*box-shadow:\s*0 0 0 3px var\(--yellow\)/s,
+  );
+});

@@ -1595,6 +1595,10 @@ html[data-theme="dark"] .progression-item.function-n {
   --function-bg: #272e3a;
 }
 
+html[data-theme="dark"] .progression-item.playing {
+  box-shadow: 0 0 0 3px var(--yellow), 0 8px 18px rgba(0, 0, 0, 0.42);
+}
+
 html[data-theme="dark"] .queue-command,
 html[data-theme="dark"] .settings-button,
 html[data-theme="dark"] .settings-popover,
