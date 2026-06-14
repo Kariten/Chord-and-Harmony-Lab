@@ -116,6 +116,7 @@ select {
   font-size: 20px;
   line-height: 1.1;
   color: #fde68a;
+  text-align: center;
 }
 
 .hero-meter strong {

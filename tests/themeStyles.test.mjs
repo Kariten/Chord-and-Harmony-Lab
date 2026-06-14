@@ -41,3 +41,7 @@ test("dark progression playback preserves the yellow active ring", () => {
 test("hero chord name is centered within the harmony meter", () => {
   assert.match(styles, /\.hero-meter strong\s*\{[^}]*text-align:\s*center/s);
 });
+
+test("hero harmony context is centered within the harmony meter", () => {
+  assert.match(styles, /\.hero-meter span\s*\{[^}]*text-align:\s*center/s);
+});
