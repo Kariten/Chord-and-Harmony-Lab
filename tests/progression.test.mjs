@@ -6,6 +6,7 @@ import {
   functionGroupForDegree,
   functionGroupForRoot,
   moveProgressionItem,
+  progressionDragSwapDirection,
   progressionPianoHighlight,
   removeProgressionItem,
   restoreProgressionQueue,
@@ -60,6 +61,50 @@ test("uses native drag for precise hovering pointers even on touch-capable deskt
     anyFinePointer: true,
     anyHover: false
   }), false);
+});
+
+test("swaps progression items after the dragged edge crosses half of an adjacent item", () => {
+  const previous = { left: 20, width: 80 };
+  const next = { left: 140, width: 120 };
+
+  assert.equal(
+    progressionDragSwapDirection({ left: 61, right: 141 }, previous, next, -1),
+    null
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 59, right: 139 }, previous, next, -1),
+    "before"
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 119, right: 199 }, previous, next, 1),
+    null
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 120, right: 200 }, previous, next, 1),
+    null
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 121, right: 201 }, previous, next, 1),
+    "after"
+  );
+});
+
+test("only evaluates the adjacent item in the active drag direction", () => {
+  const previous = { left: 20, width: 80 };
+  const next = { left: 140, width: 120 };
+
+  assert.equal(
+    progressionDragSwapDirection({ left: 0, right: 260 }, previous, next, 1),
+    "after"
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 0, right: 260 }, previous, next, -1),
+    "before"
+  );
+  assert.equal(
+    progressionDragSwapDirection({ left: 0, right: 260 }, previous, next, 0),
+    null
+  );
 });
 
 test("builds exact piano highlights for progression playback", () => {

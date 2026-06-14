@@ -50,6 +50,20 @@ export function shouldUseNativeProgressionDrag(inputCapabilities = {}) {
   return Boolean(inputCapabilities.anyFinePointer && inputCapabilities.anyHover);
 }
 
+export function progressionDragSwapDirection(draggedRect, previousRect, nextRect, movementX) {
+  if (movementX < 0 && previousRect) {
+    const previousMidpoint = previousRect.left + previousRect.width / 2;
+    return draggedRect.left < previousMidpoint ? "before" : null;
+  }
+
+  if (movementX > 0 && nextRect) {
+    const nextMidpoint = nextRect.left + nextRect.width / 2;
+    return draggedRect.right > nextMidpoint ? "after" : null;
+  }
+
+  return null;
+}
+
 export function progressionPianoHighlight(midiNotes, rootPc) {
   const midis = [...new Set(midiNotes.filter(Number.isFinite))].sort((a, b) => a - b);
   return {

@@ -33,11 +33,12 @@ import {
   createDegreeProgressionItem,
   createDetectedProgressionItem,
   moveProgressionItem,
+  progressionDragSwapDirection,
   progressionPianoHighlight,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
-} from "./progression.js?v=20260614.1";
+} from "./progression.js?v=20260614.2";
 
 const state = {
   language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
@@ -119,6 +120,7 @@ const dom = {
 
 const PIANO_KEYS = pianoKeys(48, 83);
 let progressionId = 0;
+let progressionDragSession = null;
 
 function loadProgressionQueue() {
   try {
@@ -189,6 +191,11 @@ function init() {
   dom.playProgression.addEventListener("click", playProgression);
   dom.playQueue.addEventListener("click", playProgressionQueue);
   dom.clearQueue.addEventListener("click", clearProgressionQueue);
+  dom.progressionQueue.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const dragging = dom.progressionQueue.querySelector(".progression-item.dragging");
+    if (dragging) moveDraggedProgressionChip(dragging, event.clientX);
+  });
   dom.settingsButton.addEventListener("click", (event) => {
     event.stopPropagation();
     setSettingsOpen(!state.settingsOpen);
@@ -638,17 +645,13 @@ function renderProgressionQueue() {
 
 function bindProgressionDrag(chip) {
   chip.addEventListener("dragstart", (event) => {
-    chip.classList.add("dragging");
+    beginProgressionDrag(chip, event.clientX);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", chip.dataset.progressionId);
   });
-  chip.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    const dragging = dom.progressionQueue.querySelector(".progression-item.dragging");
-    if (dragging && dragging !== chip) placeDraggedChip(dragging, chip, event.clientX);
-  });
   chip.addEventListener("dragend", () => {
     chip.classList.remove("dragging");
+    progressionDragSession = null;
     commitProgressionDomOrder();
   });
 
@@ -660,12 +663,12 @@ function bindProgressionDrag(chip) {
     event.preventDefault();
     activePointerId = event.pointerId;
     chip.setPointerCapture(event.pointerId);
-    chip.classList.add("dragging");
+    beginProgressionDrag(chip, event.clientX);
   });
 
   chip.addEventListener("pointermove", (event) => {
     if (event.pointerId !== activePointerId) return;
-    moveDraggedProgressionChip(chip, event.clientX, event.clientY);
+    moveDraggedProgressionChip(chip, event.clientX);
   });
 
   const finishPointerDrag = (event) => {
@@ -673,6 +676,7 @@ function bindProgressionDrag(chip) {
     if (chip.hasPointerCapture(event.pointerId)) chip.releasePointerCapture(event.pointerId);
     activePointerId = null;
     chip.classList.remove("dragging");
+    progressionDragSession = null;
     commitProgressionDomOrder();
   };
   chip.addEventListener("pointerup", finishPointerDrag);
@@ -682,7 +686,7 @@ function bindProgressionDrag(chip) {
     if (event.touches.length !== 1 || event.target.closest("button")) return;
     event.preventDefault();
     activeTouchId = event.changedTouches[0].identifier;
-    chip.classList.add("dragging");
+    beginProgressionDrag(chip, event.changedTouches[0].clientX);
   }, { passive: false });
 
   chip.addEventListener("touchmove", (event) => {
@@ -690,7 +694,7 @@ function bindProgressionDrag(chip) {
     if (!touch) return;
 
     event.preventDefault();
-    moveDraggedProgressionChip(chip, touch.clientX, touch.clientY);
+    moveDraggedProgressionChip(chip, touch.clientX);
   }, { passive: false });
 
   const finishTouchDrag = (event) => {
@@ -698,6 +702,7 @@ function bindProgressionDrag(chip) {
     event.preventDefault();
     activeTouchId = null;
     chip.classList.remove("dragging");
+    progressionDragSession = null;
     commitProgressionDomOrder();
   };
   chip.addEventListener("touchend", finishTouchDrag, { passive: false });
@@ -711,18 +716,56 @@ function nativeProgressionDragEnabled() {
   });
 }
 
-function moveDraggedProgressionChip(chip, clientX, clientY) {
-  const target = document.elementFromPoint(clientX, clientY)?.closest(".progression-item");
-  if (target && target !== chip && dom.progressionQueue.contains(target)) {
-    placeDraggedChip(chip, target, clientX);
-  }
-  dom.progressionQueue.scrollLeft += progressionEdgeScroll(clientX);
+function beginProgressionDrag(chip, clientX) {
+  const rect = chip.getBoundingClientRect();
+  const pointerInsideChip = clientX >= rect.left && clientX <= rect.right;
+  progressionDragSession = {
+    id: chip.dataset.progressionId,
+    width: rect.width,
+    grabOffsetX: pointerInsideChip ? clientX - rect.left : rect.width / 2,
+    lastClientX: clientX
+  };
+  chip.classList.add("dragging");
 }
 
-function placeDraggedChip(dragging, target, clientX) {
-  const rect = target.getBoundingClientRect();
-  const after = clientX > rect.left + rect.width / 2;
-  dom.progressionQueue.insertBefore(dragging, after ? target.nextSibling : target);
+function moveDraggedProgressionChip(chip, clientX) {
+  const session = progressionDragSession;
+  if (!session || session.id !== chip.dataset.progressionId || !Number.isFinite(clientX)) return;
+
+  const movementX = clientX - session.lastClientX;
+  session.lastClientX = clientX;
+
+  if (movementX !== 0) {
+    const draggedLeft = clientX - session.grabOffsetX;
+    const draggedRect = {
+      left: draggedLeft,
+      right: draggedLeft + session.width
+    };
+    const maxMoves = dom.progressionQueue.querySelectorAll(".progression-item").length;
+
+    for (let moveCount = 0; moveCount < maxMoves; moveCount += 1) {
+      const items = [...dom.progressionQueue.querySelectorAll(".progression-item")];
+      const index = items.indexOf(chip);
+      const previous = items[index - 1];
+      const next = items[index + 1];
+      const direction = progressionDragSwapDirection(
+        draggedRect,
+        previous?.getBoundingClientRect(),
+        next?.getBoundingClientRect(),
+        movementX
+      );
+
+      if (direction === "before") {
+        dom.progressionQueue.insertBefore(chip, previous);
+      } else if (direction === "after") {
+        dom.progressionQueue.insertBefore(chip, next.nextSibling);
+      } else {
+        break;
+      }
+    }
+  }
+
+  dom.progressionQueue.scrollLeft += progressionEdgeScroll(clientX);
 }
 
 function progressionEdgeScroll(clientX) {
