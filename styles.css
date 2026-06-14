@@ -121,6 +121,7 @@ select {
 .hero-meter strong {
   font-size: 46px;
   line-height: 1;
+  text-align: center;
   white-space: nowrap;
 }
 
