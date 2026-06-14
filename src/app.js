@@ -17,14 +17,17 @@ import {
   scaleUsesFlats
 } from "./chordEngine.js";
 import {
+  DEFAULT_BPM,
   PLAYBACK_TEXTURES,
+  barDurationForBpm,
   midiPlaybackWindow,
+  normalizeBpm,
   pianoSampleStatus,
   playMidiNotes,
   preloadPianoSamples
-} from "./audio.js";
+} from "./audio.js?v=20260614.3";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.3";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 import {
   createDegreeProgressionItem,
@@ -52,6 +55,7 @@ const state = {
   analysisView: "tones",
   guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
   texture: localStorage.getItem("chordLabTexture") || "block",
+  bpm: normalizeBpm(localStorage.getItem("chordLabBpm"), DEFAULT_BPM),
   progressionTimers: [],
   isPlayingProgression: false,
   progressionQueue: loadProgressionQueue(),
@@ -69,6 +73,8 @@ const dom = {
   modeSelect: document.querySelector("#modeSelect"),
   languageSelect: document.querySelector("#languageSelect"),
   textureSelect: document.querySelector("#textureSelect"),
+  bpmRange: document.querySelector("#bpmRange"),
+  bpmInput: document.querySelector("#bpmInput"),
   triadButton: document.querySelector("#triadButton"),
   seventhButton: document.querySelector("#seventhButton"),
   playProgression: document.querySelector("#playProgression"),
@@ -143,6 +149,12 @@ function init() {
     localStorage.setItem("chordLabTexture", state.texture);
     render();
   });
+
+  dom.bpmRange.addEventListener("input", () => updateBpm(dom.bpmRange.value));
+  dom.bpmInput.addEventListener("input", () => {
+    if (dom.bpmInput.value !== "") updateBpm(dom.bpmInput.value);
+  });
+  dom.bpmInput.addEventListener("change", () => updateBpm(dom.bpmInput.value));
 
   dom.keySelect.addEventListener("change", () => {
     clearProgressionTimers();
@@ -282,6 +294,21 @@ function renderTextureOptions() {
   dom.textureSelect.value = state.texture;
 }
 
+function updateBpm(value) {
+  clearProgressionTimers();
+  clearQueueTimers();
+  state.bpm = normalizeBpm(value, state.bpm);
+  localStorage.setItem("chordLabBpm", String(state.bpm));
+  syncBpmControls();
+  render();
+}
+
+function syncBpmControls() {
+  const value = String(state.bpm);
+  dom.bpmRange.value = value;
+  dom.bpmInput.value = value;
+}
+
 function render() {
   const key = keyByPc(state.keyPc);
   const mode = modeById(state.modeId);
@@ -297,6 +324,7 @@ function render() {
   dom.keySelect.value = String(state.keyPc);
   dom.modeSelect.value = state.modeId;
   dom.textureSelect.value = state.texture;
+  syncBpmControls();
   dom.playProgression.disabled = state.isPlayingProgression;
   dom.guitarToggle.checked = state.guitarEnabled;
   dom.playQueue.disabled = state.progressionQueue.length === 0 || state.isPlayingQueue;
@@ -1013,7 +1041,11 @@ function playActiveSound() {
 }
 
 function playChord(midiNotes, options = {}) {
-  playMidiNotes(midiNotes, { ...options, texture: state.texture });
+  playMidiNotes(midiNotes, {
+    duration: barDurationForBpm(state.bpm),
+    ...options,
+    texture: state.texture
+  });
 }
 
 function activeInputMidis() {
@@ -1198,7 +1230,7 @@ function playProgressionQueue() {
     midiNotes: [...item.midiNotes]
   }));
   const texture = state.texture;
-  const duration = 1.6;
+  const duration = barDurationForBpm(state.bpm);
   let delay = 0;
   let playbackEnd = 0;
 
@@ -1233,7 +1265,7 @@ function playProgression() {
   clearProgressionTimers();
   const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
   const texture = state.texture;
-  const duration = 1.6;
+  const duration = barDurationForBpm(state.bpm);
   const spread = 0.012;
   let delay = 0;
   let playbackEnd = 0;

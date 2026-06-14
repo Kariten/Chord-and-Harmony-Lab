@@ -2,13 +2,30 @@ import assert from "node:assert/strict";
 import { stat } from "node:fs/promises";
 import test from "node:test";
 import {
+  DEFAULT_BPM,
+  MAX_BPM,
+  MIN_BPM,
   PIANO_SAMPLES,
   PLAYBACK_TEXTURES,
+  barDurationForBpm,
   chordPlaybackEvents,
   midiPlaybackWindow,
+  normalizeBpm,
   pianoSampleForMidi,
   playbackWindow
 } from "../src/audio.js";
+
+test("normalizes BPM values and converts 4/4 bars to seconds", () => {
+  assert.equal(DEFAULT_BPM, 150);
+  assert.equal(normalizeBpm("120"), 120);
+  assert.equal(normalizeBpm(20), MIN_BPM);
+  assert.equal(normalizeBpm(300), MAX_BPM);
+  assert.equal(normalizeBpm(null), DEFAULT_BPM);
+  assert.equal(normalizeBpm(""), DEFAULT_BPM);
+  assert.equal(normalizeBpm("invalid", 96), 96);
+  assert.equal(barDurationForBpm(120), 2);
+  assert.equal(barDurationForBpm(DEFAULT_BPM), 1.6);
+});
 
 test("covers the full piano range with Salamander sample roots", () => {
   assert.equal(PIANO_SAMPLES.length, 30);

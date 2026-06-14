@@ -370,7 +370,7 @@ select {
   z-index: 50;
   top: calc(100% + 8px);
   right: 0;
-  width: min(840px, calc(100vw - 24px));
+  width: min(980px, calc(100vw - 24px));
   padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -401,7 +401,7 @@ select {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: minmax(130px, 0.85fr) minmax(160px, 1fr) minmax(150px, auto) minmax(180px, 1.15fr) minmax(96px, 0.55fr);
+  grid-template-columns: minmax(120px, 0.8fr) minmax(150px, 1fr) minmax(170px, 1fr) minmax(145px, auto) minmax(170px, 1.1fr) minmax(96px, 0.55fr);
   gap: 8px;
   align-items: center;
 }
@@ -492,6 +492,61 @@ select {
 
 .texture-field {
   flex-basis: 152px;
+}
+
+.bpm-control {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 54px;
+  gap: 8px;
+  align-items: end;
+  width: 100%;
+  height: 54px;
+  padding: 19px 8px 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+}
+
+.bpm-control input {
+  min-width: 0;
+}
+
+.bpm-control input[type="number"] {
+  width: 54px;
+  height: 27px;
+  padding: 0 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.bpm-control input[type="range"] {
+  height: 27px;
+  margin: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+.bpm-control:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .midi-field {

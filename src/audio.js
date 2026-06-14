@@ -8,6 +8,9 @@ let encodedSamples = new Map();
 let decodedSamples = new Map();
 
 const PIANO_RELEASE_SECONDS = 0.68;
+export const DEFAULT_BPM = 150;
+export const MIN_BPM = 40;
+export const MAX_BPM = 240;
 const PIANO_SAMPLE_FILES = [
   "A0", "C1", "Ds1", "Fs1", "A1", "C2", "Ds2", "Fs2", "A2", "C3",
   "Ds3", "Fs3", "A3", "C4", "Ds4", "Fs4", "A4", "C5", "Ds5", "Fs5",
@@ -33,6 +36,17 @@ export const PLAYBACK_TEXTURES = [
   { id: "arpeggio-turn-rest", nameKey: "textureArpeggioTurnRest" },
   { id: "bass-answer", nameKey: "textureBassAnswer" }
 ];
+
+export function normalizeBpm(value, fallback = DEFAULT_BPM) {
+  if (value == null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(parsed)));
+}
+
+export function barDurationForBpm(bpm) {
+  return 240 / normalizeBpm(bpm);
+}
 
 export async function playMidiNotes(midiNotes, options = {}) {
   const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
