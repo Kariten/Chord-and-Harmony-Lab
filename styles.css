@@ -1642,6 +1642,11 @@ html[data-theme="dark"] .segment.active {
   color: #f8fafc;
 }
 
+html[data-theme="dark"] .analysis-tab.active {
+  background: #0e131b;
+  color: #f8fafc;
+}
+
 html[data-theme="dark"] .mini-play {
   background: #0e131b;
   color: #f8fafc;
