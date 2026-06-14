@@ -1691,9 +1691,21 @@ html[data-theme="dark"] .clear-selection-button:focus-visible {
 }
 
 html[data-theme="dark"] .guitar-fretboard {
-  border-color: #0f172a;
-  background: linear-gradient(90deg, #fffaf0, #f8fafc);
-  color: #111827;
+  border-color: #465060;
+  background: linear-gradient(90deg, #111923, #182230);
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .guitar-fretboard.nut-position {
+  border-left-color: #e2e8f0;
+}
+
+html[data-theme="dark"] .guitar-string-line {
+  background: rgba(226, 232, 240, 0.68);
+}
+
+html[data-theme="dark"] .guitar-fret-line {
+  background: rgba(148, 163, 184, 0.3);
 }
 
 @media (max-width: 1100px) {
