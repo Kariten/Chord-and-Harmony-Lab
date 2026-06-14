@@ -25,7 +25,7 @@ import {
   pianoSampleStatus,
   playMidiNotes,
   preloadPianoSamples
-} from "./audio.js?v=20260614.3";
+} from "./audio.js?v=20260614.4";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.3";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";

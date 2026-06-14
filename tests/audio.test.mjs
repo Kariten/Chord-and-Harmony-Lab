@@ -149,15 +149,21 @@ test("uses the recognized root for bass-led textures when the voicing is inverte
   assert.deepEqual(withRoot.filter((event) => event.velocity > 0.9).map((event) => event.midi), [60, 60]);
 });
 
-test("short arpeggios play five eighth-note slots followed by three rests", () => {
+test("short arpeggios add a sustained low root beneath five eighth-note attacks", () => {
   const duration = 1.6;
   ["arpeggio-up-rest", "arpeggio-down-rest", "arpeggio-turn-rest"].forEach((texture) => {
     const events = chordPlaybackEvents([60, 64, 67, 71], { texture, duration, rootPc: 0 });
-    const lastSoundEnd = Math.max(...events.map((event) => event.time + event.duration));
+    const bass = events.find((event) => event.duration === duration);
+    const arpeggio = events.filter((event) => event !== bass);
 
-    assert.equal(events.length, 5);
-    assert.deepEqual(events.map((event) => round(event.time)), [0, 0.2, 0.4, 0.6, 0.8]);
-    assert.ok(duration - lastSoundEnd >= 0.6, `${texture} should leave three eighth-note rest slots`);
+    assert.equal(events.length, 6);
+    assert.equal(bass.midi, 48);
+    assert.equal(bass.time, 0);
+    assert.deepEqual(arpeggio.map((event) => round(event.time)), [0, 0.2, 0.4, 0.6, 0.8]);
+    assert.ok(
+      duration - Math.max(...arpeggio.map((event) => event.time + event.duration)) >= 0.6,
+      `${texture} should leave three upper-voice rest slots`
+    );
     assert.equal(midiPlaybackWindow([60, 64, 67, 71], { texture, duration, rootPc: 0 }).eventEnd, duration);
   });
 });
@@ -176,9 +182,21 @@ test("short ascending and descending arpeggios continue across octaves", () => {
     duration: 1.6
   });
 
-  assert.deepEqual(ascending.map((event) => event.midi), [60, 64, 67, 72, 76]);
-  assert.deepEqual(descending.map((event) => event.midi), [67, 64, 60, 55, 52]);
-  assert.deepEqual(turn.map((event) => event.midi), [60, 64, 67, 72, 67]);
+  assert.deepEqual(ascending.slice(1).map((event) => event.midi), [60, 64, 67, 72, 76]);
+  assert.deepEqual(descending.slice(1).map((event) => event.midi), [67, 64, 60, 55, 52]);
+  assert.deepEqual(turn.slice(1).map((event) => event.midi), [60, 64, 67, 72, 67]);
+});
+
+test("short arpeggio bass follows the recognized root in inverted voicings", () => {
+  const events = chordPlaybackEvents([64, 67, 72], {
+    texture: "arpeggio-up-rest",
+    duration: 1.6,
+    rootPc: 0
+  });
+  const bass = events.find((event) => event.duration === 1.6);
+
+  assert.equal(bass.midi, 48);
+  assert.equal(bass.midi % 12, 0);
 });
 
 test("short arpeggios keep the same rhythm across triads and seventh chords", () => {
@@ -203,7 +221,7 @@ test("bass answer texture keeps a clear ending rest", () => {
 
 function rhythmicSlots(events, duration) {
   const step = duration / 8;
-  return [...new Set(events.map((event) => Math.round(event.time / step)))];
+  return [...new Set(events.filter((event) => event.duration < duration).map((event) => Math.round(event.time / step)))];
 }
 
 function round(value) {

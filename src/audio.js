@@ -276,16 +276,22 @@ export function chordPlaybackEvents(midiNotes, options = {}) {
   }
 
   if (texture === "arpeggio-up-rest") {
-    return shortArpeggioEvents(directionalPattern(notes, 5, 1), duration, voiceCount);
+    return shortArpeggioEvents(directionalPattern(notes, 5, 1), notes, duration, voiceCount, rootPc);
   }
 
   if (texture === "arpeggio-down-rest") {
-    return shortArpeggioEvents(directionalPattern(notes, 5, -1), duration, voiceCount);
+    return shortArpeggioEvents(directionalPattern(notes, 5, -1), notes, duration, voiceCount, rootPc);
   }
 
   if (texture === "arpeggio-turn-rest") {
     const rising = directionalPattern(notes, 4, 1);
-    return shortArpeggioEvents([...rising, notes[Math.min(2, notes.length - 1)]], duration, voiceCount);
+    return shortArpeggioEvents(
+      [...rising, notes[Math.min(2, notes.length - 1)]],
+      notes,
+      duration,
+      voiceCount,
+      rootPc
+    );
   }
 
   if (texture === "bass-answer") {
@@ -445,15 +451,25 @@ function strideEvents(notes, duration, voiceCount, rootPc) {
   return events.sort((a, b) => a.time - b.time || a.midi - b.midi);
 }
 
-function shortArpeggioEvents(pattern, duration, voiceCount) {
+function shortArpeggioEvents(pattern, notes, duration, voiceCount, rootPc) {
   const step = duration / 8;
-  return pattern.map((midi, index) => ({
-    midi,
-    time: index * step,
-    duration: step * 0.82,
-    velocity: index === 0 ? 1 : 0.84,
-    voiceCount
-  }));
+  const bass = sustainedRootBass(rootMidi(notes, rootPc));
+  return [
+    {
+      midi: bass,
+      time: 0,
+      duration,
+      velocity: 0.76,
+      voiceCount
+    },
+    ...pattern.map((midi, index) => ({
+      midi,
+      time: index * step,
+      duration: step * 0.82,
+      velocity: index === 0 ? 1 : 0.84,
+      voiceCount
+    }))
+  ];
 }
 
 function bassAnswerEvents(notes, duration, voiceCount, rootPc) {
@@ -471,6 +487,13 @@ function bassAnswerEvents(notes, duration, voiceCount, rootPc) {
 
 function lowBassNote(midi) {
   return midi >= 52 ? midi - 12 : midi;
+}
+
+function sustainedRootBass(midi) {
+  let bass = midi;
+  while (bass > 51) bass -= 12;
+  while (bass < 40) bass += 12;
+  return bass;
 }
 
 function rootMidi(notes, rootPc) {
