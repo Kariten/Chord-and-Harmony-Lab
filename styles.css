@@ -1611,6 +1611,12 @@ html[data-theme="dark"] .guitar-card {
   color: var(--ink);
 }
 
+html[data-theme="dark"] .queue-command.primary {
+  border-color: var(--green);
+  background: var(--green);
+  color: #ffffff;
+}
+
 html[data-theme="dark"] select {
   background-image:
     linear-gradient(45deg, transparent 50%, #a5b1c2 50%),
