@@ -27,7 +27,7 @@ import {
   preloadPianoSamples
 } from "./audio.js?v=20260614.4";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.3";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.5";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 import {
   createDegreeProgressionItem,
@@ -54,6 +54,7 @@ const state = {
   midiStatus: "",
   analysisView: "tones",
   guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
+  darkMode: localStorage.getItem("chordLabDarkMode") === "true",
   texture: localStorage.getItem("chordLabTexture") || "block",
   bpm: normalizeBpm(localStorage.getItem("chordLabBpm"), DEFAULT_BPM),
   progressionTimers: [],
@@ -90,6 +91,7 @@ const dom = {
   settingsPopover: document.querySelector("#settingsPopover"),
   clearSelection: document.querySelector("#clearSelection"),
   guitarToggle: document.querySelector("#guitarToggle"),
+  darkModeToggle: document.querySelector("#darkModeToggle"),
   analysisTabs: document.querySelector(".analysis-tabs"),
   toneViewButton: document.querySelector("#toneViewButton"),
   guitarViewButton: document.querySelector("#guitarViewButton"),
@@ -200,6 +202,11 @@ function init() {
     if (!state.guitarEnabled) state.analysisView = "tones";
     render();
   });
+  dom.darkModeToggle.addEventListener("change", () => {
+    state.darkMode = dom.darkModeToggle.checked;
+    localStorage.setItem("chordLabDarkMode", String(state.darkMode));
+    applyTheme();
+  });
   dom.guitarTipButton.addEventListener("click", (event) => {
     event.stopPropagation();
     positionGuitarTip();
@@ -309,6 +316,11 @@ function syncBpmControls() {
   dom.bpmInput.value = value;
 }
 
+function applyTheme() {
+  document.documentElement.dataset.theme = state.darkMode ? "dark" : "light";
+  dom.darkModeToggle.checked = state.darkMode;
+}
+
 function render() {
   const key = keyByPc(state.keyPc);
   const mode = modeById(state.modeId);
@@ -327,6 +339,7 @@ function render() {
   syncBpmControls();
   dom.playProgression.disabled = state.isPlayingProgression;
   dom.guitarToggle.checked = state.guitarEnabled;
+  applyTheme();
   dom.playQueue.disabled = state.progressionQueue.length === 0 || state.isPlayingQueue;
   dom.clearQueue.disabled = state.progressionQueue.length === 0;
 

@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Chord & Harmony Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260614.3" />
+    <script>
+      try {
+        if (localStorage.getItem("chordLabDarkMode") === "true") {
+          document.documentElement.dataset.theme = "dark";
+        }
+      } catch {}
+    </script>
+    <link rel="stylesheet" href="./styles.css?v=20260614.5" />
   </head>
   <body>
     <main class="app-shell">
@@ -60,6 +67,11 @@
             <label class="switch-field guitar-switch-field">
               <span data-i18n="guitarReference">吉他指法</span>
               <input id="guitarToggle" type="checkbox" checked />
+              <i aria-hidden="true"></i>
+            </label>
+            <label class="switch-field theme-switch-field">
+              <span data-i18n="darkMode">夜间模式</span>
+              <input id="darkModeToggle" type="checkbox" />
               <i aria-hidden="true"></i>
             </label>
             <label class="field midi-field">
@@ -169,6 +181,6 @@
       </section>
     </main>
 
-    <script type="module" src="./src/app.js?v=20260614.4"></script>
+    <script type="module" src="./src/app.js?v=20260614.5"></script>
   </body>
 </html>

@@ -30,6 +30,12 @@ test("localizes degree card audition label in Chinese", () => {
   assert.equal(translate("zh-CN", "play"), "试听");
 });
 
+test("localizes the dark mode setting in every language", () => {
+  for (const language of LANGUAGES) {
+    assert.notEqual(translate(language.id, "darkMode"), "darkMode");
+  }
+});
+
 test("provides localized mode labels without Chinese aliases outside Chinese", () => {
   const chineseFragments = /大调|小调|和声|旋律|自然/;
   const modeIds = MODES.map((mode) => mode.id);
