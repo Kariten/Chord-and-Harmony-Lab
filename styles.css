@@ -1567,6 +1567,11 @@ html[data-theme="dark"] .clear-selection-button {
   color: #d6deea;
 }
 
+html[data-theme="dark"] .segmented,
+html[data-theme="dark"] .analysis-tabs {
+  border-color: #3a4352;
+}
+
 html[data-theme="dark"] .progression-item {
   --function-bg: #242b36;
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.28);
