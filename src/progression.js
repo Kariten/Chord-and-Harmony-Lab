@@ -4,6 +4,8 @@ const FUNCTION_GROUPS = {
   D: new Set([5, 7])
 };
 
+export const PROGRESSION_TOUCH_HOLD_MS = 350;
+
 export function functionGroupForDegree(degree) {
   const numericDegree = Number(degree);
   return Object.entries(FUNCTION_GROUPS).find(([, degrees]) => degrees.has(numericDegree))?.[0] ?? "N";

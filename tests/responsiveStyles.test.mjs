@@ -51,5 +51,5 @@ test("allows nested scrollers to hand vertical movement back to the page", () =>
     styles,
     /\.progression-queue\s*\{[^}]*overscroll-behavior-x:\s*contain[^}]*touch-action:\s*pan-x pan-y/s
   );
-  assert.match(styles, /\.progression-item\s*\{[^}]*touch-action:\s*pan-y/s);
+  assert.match(styles, /\.progression-item\s*\{[^}]*touch-action:\s*pan-x pan-y/s);
 });

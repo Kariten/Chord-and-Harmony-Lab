@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  PROGRESSION_TOUCH_HOLD_MS,
   createDegreeProgressionItem,
   createDetectedProgressionItem,
   functionGroupForDegree,
@@ -64,6 +65,10 @@ test("uses native drag for precise hovering pointers even on touch-capable deskt
   }), false);
 });
 
+test("requires a deliberate touch hold before mobile progression sorting", () => {
+  assert.equal(PROGRESSION_TOUCH_HOLD_MS, 350);
+});
+
 test("swaps progression items after the dragged edge crosses half of an adjacent item", () => {
   const previous = { left: 20, width: 80 };
   const next = { left: 140, width: 120 };
@@ -108,7 +113,7 @@ test("only evaluates the adjacent item in the active drag direction", () => {
   );
 });
 
-test("lets vertical touch gestures scroll the page and reserves horizontal gestures for reordering", () => {
+test("detects movement that cancels a pending touch hold", () => {
   const start = { x: 100, y: 100 };
 
   assert.equal(progressionTouchIntent(start, { x: 104, y: 105 }), "pending");

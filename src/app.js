@@ -32,13 +32,14 @@ import {
   createDegreeProgressionItem,
   createDetectedProgressionItem,
   moveProgressionItem,
+  PROGRESSION_TOUCH_HOLD_MS,
   progressionDragSwapDirection,
   progressionPianoHighlight,
   progressionTouchIntent,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
-} from "./progression.js?v=20260615.1";
+} from "./progression.js?v=20260615.2";
 
 const state = {
   language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
@@ -659,6 +660,24 @@ function bindProgressionDrag(chip) {
   let activeTouchId = null;
   let activeTouchStart = null;
   let touchDragStarted = false;
+  let touchHoldTimer = null;
+
+  const clearTouchHold = () => {
+    if (touchHoldTimer !== null) {
+      window.clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+  };
+
+  const resetTouchDrag = (commit = false) => {
+    clearTouchHold();
+    activeTouchId = null;
+    activeTouchStart = null;
+    touchDragStarted = false;
+    chip.classList.remove("dragging", "touch-sorting");
+    progressionDragSession = null;
+    if (commit) commitProgressionDomOrder();
+  };
 
   chip.addEventListener("pointerdown", (event) => {
     if (chip.draggable || event.pointerType === "touch" || event.button !== 0 || event.target.closest("button")) return;
@@ -690,41 +709,40 @@ function bindProgressionDrag(chip) {
     activeTouchId = touch.identifier;
     activeTouchStart = { x: touch.clientX, y: touch.clientY };
     touchDragStarted = false;
+    clearTouchHold();
+    touchHoldTimer = window.setTimeout(() => {
+      if (activeTouchId !== touch.identifier || !activeTouchStart) return;
+      beginProgressionDrag(chip, activeTouchStart.x);
+      touchDragStarted = true;
+      chip.classList.add("touch-sorting");
+      touchHoldTimer = null;
+    }, PROGRESSION_TOUCH_HOLD_MS);
   }, { passive: false });
 
   chip.addEventListener("touchmove", (event) => {
     const touch = Array.from(event.touches).find((candidate) => candidate.identifier === activeTouchId);
     if (!touch) return;
 
-    const intent = progressionTouchIntent(activeTouchStart, { x: touch.clientX, y: touch.clientY });
-    if (intent === "scroll") {
-      activeTouchId = null;
-      activeTouchStart = null;
-      touchDragStarted = false;
+    if (!touchDragStarted) {
+      const intent = progressionTouchIntent(activeTouchStart, { x: touch.clientX, y: touch.clientY });
+      if (intent !== "pending") resetTouchDrag();
       return;
     }
-    if (intent !== "drag") return;
 
     event.preventDefault();
-    if (!touchDragStarted) {
-      beginProgressionDrag(chip, activeTouchStart.x);
-      touchDragStarted = true;
-    }
     moveDraggedProgressionChip(chip, touch.clientX);
   }, { passive: false });
 
   const finishTouchDrag = (event) => {
     if (!Array.from(event.changedTouches).some((touch) => touch.identifier === activeTouchId)) return;
     if (touchDragStarted) event.preventDefault();
-    activeTouchId = null;
-    activeTouchStart = null;
-    touchDragStarted = false;
-    chip.classList.remove("dragging");
-    progressionDragSession = null;
-    commitProgressionDomOrder();
+    resetTouchDrag(touchDragStarted);
   };
   chip.addEventListener("touchend", finishTouchDrag, { passive: false });
   chip.addEventListener("touchcancel", finishTouchDrag, { passive: false });
+  chip.addEventListener("contextmenu", (event) => {
+    if (touchDragStarted) event.preventDefault();
+  });
 }
 
 function nativeProgressionDragEnabled() {
