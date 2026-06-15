@@ -37,3 +37,19 @@ test("uses a full-width harmony panel only in narrow portrait layouts", () => {
     /@media \(max-width: 760px\) and \(orientation: portrait\)\s*\{[\s\S]*?\.degree-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(140px, 1fr\)\)[^}]*\}/s
   );
 });
+
+test("allows nested scrollers to hand vertical movement back to the page", () => {
+  assert.match(
+    styles,
+    /\.degree-grid\s*\{[^}]*overscroll-behavior-x:\s*contain[^}]*overscroll-behavior-y:\s*auto[^}]*touch-action:\s*pan-x pan-y/s
+  );
+  assert.match(
+    styles,
+    /\.analysis-scroll\s*\{[^}]*overflow-y:\s*auto[^}]*overscroll-behavior-y:\s*auto[^}]*touch-action:\s*pan-y/s
+  );
+  assert.match(
+    styles,
+    /\.progression-queue\s*\{[^}]*overscroll-behavior-x:\s*contain[^}]*touch-action:\s*pan-x pan-y/s
+  );
+  assert.match(styles, /\.progression-item\s*\{[^}]*touch-action:\s*pan-y/s);
+});

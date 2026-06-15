@@ -64,6 +64,14 @@ export function progressionDragSwapDirection(draggedRect, previousRect, nextRect
   return null;
 }
 
+export function progressionTouchIntent(start, current, threshold = 8) {
+  if (!start || !current) return "pending";
+  const deltaX = Math.abs(current.x - start.x);
+  const deltaY = Math.abs(current.y - start.y);
+  if (Math.max(deltaX, deltaY) < threshold) return "pending";
+  return deltaX > deltaY ? "drag" : "scroll";
+}
+
 export function progressionPianoHighlight(midiNotes, rootPc) {
   const midis = [...new Set(midiNotes.filter(Number.isFinite))].sort((a, b) => a - b);
   return {

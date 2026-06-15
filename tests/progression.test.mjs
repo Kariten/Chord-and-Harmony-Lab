@@ -8,6 +8,7 @@ import {
   moveProgressionItem,
   progressionDragSwapDirection,
   progressionPianoHighlight,
+  progressionTouchIntent,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
@@ -105,6 +106,15 @@ test("only evaluates the adjacent item in the active drag direction", () => {
     progressionDragSwapDirection({ left: 0, right: 260 }, previous, next, 0),
     null
   );
+});
+
+test("lets vertical touch gestures scroll the page and reserves horizontal gestures for reordering", () => {
+  const start = { x: 100, y: 100 };
+
+  assert.equal(progressionTouchIntent(start, { x: 104, y: 105 }), "pending");
+  assert.equal(progressionTouchIntent(start, { x: 110, y: 132 }), "scroll");
+  assert.equal(progressionTouchIntent(start, { x: 138, y: 108 }), "drag");
+  assert.equal(progressionTouchIntent(start, { x: 120, y: 120 }), "scroll");
 });
 
 test("builds exact piano highlights for progression playback", () => {
