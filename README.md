@@ -36,6 +36,8 @@ npm test
 
 和弦与琴键试听使用 Salamander Grand Piano 的 Yamaha C5 实录采样，并通过最近采样移调覆盖完整 88 键音域。采样加载失败时会自动切换至内置合成音色，避免影响基础功能。音源采用 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) 许可，详细署名见 [`assets/piano/salamander/ATTRIBUTION.md`](assets/piano/salamander/ATTRIBUTION.md)。
 
+为兼顾 Android 平板等内存受限设备，页面会以较低并发在后台预取压缩采样，但只在用户首次试听后创建音频上下文，并按当前和弦或织体实际需要的音高进行按需解码。解码缓存采用固定上限，临时网络或解码失败也会在后续试听时自动重试，避免一次加载失败后持续使用兜底音色。
+
 ## 和弦进行编排
 
 1. 点击任意级数和弦卡片右上角的 `+`，将该和弦加入顶部队列。

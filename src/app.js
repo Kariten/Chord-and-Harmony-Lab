@@ -22,10 +22,9 @@ import {
   barDurationForBpm,
   midiPlaybackWindow,
   normalizeBpm,
-  pianoSampleStatus,
   playMidiNotes,
   preloadPianoSamples
-} from "./audio.js?v=20260614.4";
+} from "./audio.js?v=20260615.1";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
 import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.5";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
@@ -1352,13 +1351,10 @@ function playProgression() {
   state.progressionTimers.push(doneTimer);
 }
 
-preloadPianoSamples().then(() => {
-  const sampleStatus = pianoSampleStatus();
-  document.documentElement.dataset.audioEngine = sampleStatus.ready
-    ? "sampled-piano"
-    : sampleStatus.decoded > 0
-      ? "sampled-piano-partial"
-      : "synth-fallback";
+preloadPianoSamples().then((available) => {
+  document.documentElement.dataset.audioEngine = available
+    ? "sampled-piano-preloaded"
+    : "synth-fallback";
 }).catch(() => {
   document.documentElement.dataset.audioEngine = "synth-fallback";
 });

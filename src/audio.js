@@ -1,13 +1,16 @@
 import { midiToFrequency } from "./chordEngine.js";
 
 let audioContext;
-let encodedSamplePromise;
-let decodedSamplePromise;
 let decodedSampleContext;
 let encodedSamples = new Map();
 let decodedSamples = new Map();
+let encodedSamplePromises = new Map();
+let decodedSamplePromises = new Map();
 
 const PIANO_RELEASE_SECONDS = 0.68;
+export const MAX_DECODED_PIANO_SAMPLES = 12;
+export const SAMPLE_FETCH_CONCURRENCY = 3;
+export const SAMPLE_DECODE_CONCURRENCY = 2;
 export const DEFAULT_BPM = 150;
 export const MIN_BPM = 40;
 export const MAX_BPM = 240;
@@ -70,7 +73,8 @@ export async function playMidiNotes(midiNotes, options = {}) {
     rootPc: options.rootPc
   });
   const { eventEnd, playbackEnd } = playbackWindow(events, duration);
-  const samples = await ensurePianoSamples(context);
+  const samples = await ensurePianoSamples(context, events.map((event) => event.midi));
+  reportAudioEngine(samples.size > 0);
   const now = context.currentTime + 0.012;
   const master = context.createGain();
   const compressor = context.createDynamicsCompressor();
@@ -99,32 +103,37 @@ export async function playMidiNotes(midiNotes, options = {}) {
 }
 
 export function preloadPianoSamples() {
-  const context = getAudioContext();
-  if (!context) return Promise.resolve(false);
-  return ensurePianoSamples(context).then((samples) => samples.size > 0);
+  if (typeof fetch !== "function") return Promise.resolve(false);
+  return mapWithConcurrency(
+    pianoSamplePreloadOrder(),
+    SAMPLE_FETCH_CONCURRENCY,
+    loadEncodedPianoSample
+  ).then((results) => results.some(Boolean));
 }
 
-function loadEncodedPianoSamples() {
-  if (encodedSamplePromise) return encodedSamplePromise;
-  if (typeof fetch !== "function") return Promise.resolve(false);
+async function loadEncodedPianoSample(sample) {
+  if (encodedSamples.has(sample.midi)) return encodedSamples.get(sample.midi);
+  if (encodedSamplePromises.has(sample.midi)) return encodedSamplePromises.get(sample.midi);
+  if (typeof fetch !== "function") return null;
 
-  encodedSamplePromise = Promise.allSettled(
-    PIANO_SAMPLES.map(async (sample) => {
+  const promise = (async () => {
+    try {
       const url = new URL(`../assets/piano/salamander/${sample.file}`, import.meta.url);
       const response = await fetch(url, { cache: "force-cache" });
       if (!response.ok) throw new Error(`Unable to load piano sample ${sample.file}`);
-      return [sample.midi, await response.arrayBuffer()];
-    })
-  ).then((results) => {
-    encodedSamples = new Map(
-      results
-        .filter((result) => result.status === "fulfilled")
-        .map((result) => result.value)
-    );
-    return encodedSamples.size > 0;
-  }).catch(() => false);
+      const data = await response.arrayBuffer();
+      if (data.byteLength < 1000) throw new Error(`Piano sample ${sample.file} is incomplete`);
+      encodedSamples.set(sample.midi, data);
+      return data;
+    } catch {
+      return null;
+    } finally {
+      encodedSamplePromises.delete(sample.midi);
+    }
+  })();
 
-  return encodedSamplePromise;
+  encodedSamplePromises.set(sample.midi, promise);
+  return promise;
 }
 
 export function pianoSampleForMidi(midi, samples = PIANO_SAMPLES) {
@@ -138,12 +147,28 @@ export function pianoSampleForMidi(midi, samples = PIANO_SAMPLES) {
   };
 }
 
+export function pianoSamplesForMidis(midis, samples = PIANO_SAMPLES) {
+  const selected = new Map();
+  [...new Set(midis.filter(Number.isFinite))].forEach((midi) => {
+    const sample = pianoSampleForMidi(midi, samples);
+    if (sample) selected.set(sample.midi, sample);
+  });
+  return [...selected.values()];
+}
+
+export function pianoSamplePreloadOrder(samples = PIANO_SAMPLES, centerMidi = 60) {
+  return [...samples].sort((left, right) => {
+    return Math.abs(left.midi - centerMidi) - Math.abs(right.midi - centerMidi);
+  });
+}
+
 export function pianoSampleStatus() {
   return {
     expected: PIANO_SAMPLES.length,
     encoded: encodedSamples.size,
     decoded: decodedSamples.size,
-    ready: decodedSamples.size === PIANO_SAMPLES.length
+    ready: decodedSamples.size > 0,
+    complete: decodedSamples.size === PIANO_SAMPLES.length
   };
 }
 
@@ -154,29 +179,84 @@ function getAudioContext() {
   return audioContext;
 }
 
-async function ensurePianoSamples(context) {
-  if (decodedSampleContext === context && decodedSamples.size) return decodedSamples;
+async function ensurePianoSamples(context, midis) {
   if (decodedSampleContext !== context) {
     decodedSampleContext = context;
     decodedSamples = new Map();
-    decodedSamplePromise = null;
+    decodedSamplePromises = new Map();
   }
 
-  decodedSamplePromise ??= loadEncodedPianoSamples()
-    .then(async () => {
-      const results = await Promise.allSettled(
-        [...encodedSamples].map(async ([midi, data]) => [midi, await context.decodeAudioData(data.slice(0))])
-      );
-      decodedSamples = new Map(
-        results
-          .filter((result) => result.status === "fulfilled")
-          .map((result) => result.value)
-      );
-      return decodedSamples;
-    })
-    .catch(() => new Map());
+  const requiredSamples = pianoSamplesForMidis(midis);
+  await mapWithConcurrency(
+    requiredSamples,
+    SAMPLE_DECODE_CONCURRENCY,
+    (sample) => decodePianoSample(context, sample)
+  );
+  return decodedSamples;
+}
 
-  return decodedSamplePromise;
+async function decodePianoSample(context, sample) {
+  if (decodedSamples.has(sample.midi)) {
+    touchDecodedSample(sample.midi, decodedSamples.get(sample.midi));
+    return decodedSamples.get(sample.midi);
+  }
+  if (decodedSamplePromises.has(sample.midi)) return decodedSamplePromises.get(sample.midi);
+
+  const promise = (async () => {
+    try {
+      const data = await loadEncodedPianoSample(sample);
+      if (!data) return null;
+      const buffer = await context.decodeAudioData(data.slice(0));
+      touchDecodedSample(sample.midi, buffer);
+      trimDecodedSampleCache();
+      return buffer;
+    } catch {
+      return null;
+    } finally {
+      decodedSamplePromises.delete(sample.midi);
+    }
+  })();
+
+  decodedSamplePromises.set(sample.midi, promise);
+  return promise;
+}
+
+function touchDecodedSample(midi, buffer) {
+  decodedSamples.delete(midi);
+  decodedSamples.set(midi, buffer);
+}
+
+function trimDecodedSampleCache() {
+  while (decodedSamples.size > MAX_DECODED_PIANO_SAMPLES) {
+    decodedSamples.delete(decodedSamples.keys().next().value);
+  }
+}
+
+export async function mapWithConcurrency(items, concurrency, worker) {
+  const results = new Array(items.length);
+  const limit = Math.max(1, Math.min(items.length || 1, Math.floor(concurrency) || 1));
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = await worker(items[index], index);
+      } catch {
+        results[index] = null;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, runWorker));
+  return results;
+}
+
+function reportAudioEngine(sampled) {
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.audioEngine = sampled ? "sampled-piano" : "synth-fallback";
+  }
 }
 
 function playSampledPianoEvent(context, output, samples, event, now) {

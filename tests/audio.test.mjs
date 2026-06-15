@@ -3,15 +3,21 @@ import { stat } from "node:fs/promises";
 import test from "node:test";
 import {
   DEFAULT_BPM,
+  MAX_DECODED_PIANO_SAMPLES,
   MAX_BPM,
   MIN_BPM,
   PIANO_SAMPLES,
   PLAYBACK_TEXTURES,
+  SAMPLE_DECODE_CONCURRENCY,
+  SAMPLE_FETCH_CONCURRENCY,
   barDurationForBpm,
   chordPlaybackEvents,
+  mapWithConcurrency,
   midiPlaybackWindow,
   normalizeBpm,
   pianoSampleForMidi,
+  pianoSamplePreloadOrder,
+  pianoSamplesForMidis,
   playbackWindow
 } from "../src/audio.js";
 
@@ -52,6 +58,172 @@ test("maps every note to a nearby sample with the correct playback rate", () => 
   assert.equal(round(raised.playbackRate), round(2 ** (-1 / 12)));
   assert.equal(lowered.name, "C4");
   assert.equal(round(lowered.playbackRate), round(2 ** (-1 / 12)));
+});
+
+test("loads only the distinct sample roots required by the played notes", () => {
+  const samples = pianoSamplesForMidis([60, 64, 67, 71, 60]);
+
+  assert.deepEqual(samples.map((sample) => sample.midi), [60, 63, 66, 72]);
+  assert.ok(samples.every((sample) => sample.playbackRate > 0));
+});
+
+test("preloads compressed piano samples from the middle register outward", () => {
+  const order = pianoSamplePreloadOrder();
+
+  assert.equal(order[0].midi, 60);
+  assert.ok(Math.abs(order[1].midi - 60) <= Math.abs(order.at(-1).midi - 60));
+  assert.equal(new Set(order.map((sample) => sample.midi)).size, PIANO_SAMPLES.length);
+});
+
+test("limits mobile-friendly sample loading and decoding concurrency", async () => {
+  assert.equal(SAMPLE_FETCH_CONCURRENCY, 3);
+  assert.equal(SAMPLE_DECODE_CONCURRENCY, 2);
+  assert.equal(MAX_DECODED_PIANO_SAMPLES, 12);
+
+  let active = 0;
+  let peak = 0;
+  const results = await mapWithConcurrency([1, 2, 3, 4, 5], 2, async (value) => {
+    active += 1;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    active -= 1;
+    return value * 2;
+  });
+
+  assert.deepEqual(results, [2, 4, 6, 8, 10]);
+  assert.equal(peak, 2);
+});
+
+test("prefetches compressed samples without creating or decoding an audio context", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalAudioContext = globalThis.AudioContext;
+  let activeFetches = 0;
+  let peakFetches = 0;
+  let contextCreations = 0;
+
+  globalThis.fetch = async () => {
+    activeFetches += 1;
+    peakFetches = Math.max(peakFetches, activeFetches);
+    await new Promise((resolve) => setTimeout(resolve, 1));
+    activeFetches -= 1;
+    return {
+      ok: true,
+      arrayBuffer: async () => new Uint8Array(2048).buffer
+    };
+  };
+  globalThis.AudioContext = class {
+    constructor() {
+      contextCreations += 1;
+    }
+  };
+
+  try {
+    const audio = await import("../src/audio.js?encoded-preload-test");
+    assert.equal(await audio.preloadPianoSamples(), true);
+    assert.equal(contextCreations, 0);
+    assert.ok(peakFetches <= audio.SAMPLE_FETCH_CONCURRENCY);
+    assert.deepEqual(audio.pianoSampleStatus(), {
+      expected: audio.PIANO_SAMPLES.length,
+      encoded: audio.PIANO_SAMPLES.length,
+      decoded: 0,
+      ready: false,
+      complete: false
+    });
+  } finally {
+    restoreGlobal("fetch", originalFetch);
+    restoreGlobal("AudioContext", originalAudioContext);
+  }
+});
+
+test("retries sample downloads after a transient preload failure", async () => {
+  const originalFetch = globalThis.fetch;
+  let shouldFail = true;
+  let requestCount = 0;
+
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    if (shouldFail) throw new Error("temporary network failure");
+    return {
+      ok: true,
+      arrayBuffer: async () => new Uint8Array(2048).buffer
+    };
+  };
+
+  try {
+    const audio = await import("../src/audio.js?sample-retry-test");
+    assert.equal(await audio.preloadPianoSamples(), false);
+    shouldFail = false;
+    assert.equal(await audio.preloadPianoSamples(), true);
+    assert.equal(requestCount, audio.PIANO_SAMPLES.length * 2);
+  } finally {
+    restoreGlobal("fetch", originalFetch);
+  }
+});
+
+test("decodes only the samples needed for the first played chord", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalAudioContext = globalThis.AudioContext;
+  let decodeCount = 0;
+  let sourceCount = 0;
+  let contextCreations = 0;
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    arrayBuffer: async () => new Uint8Array(2048).buffer
+  });
+  globalThis.AudioContext = class {
+    constructor() {
+      contextCreations += 1;
+      this.state = "running";
+      this.currentTime = 0;
+      this.destination = {};
+    }
+
+    decodeAudioData() {
+      decodeCount += 1;
+      return Promise.resolve({ duration: 4 });
+    }
+
+    createGain() {
+      return { gain: audioParam(), connect() {} };
+    }
+
+    createDynamicsCompressor() {
+      return {
+        threshold: { value: 0 },
+        knee: { value: 0 },
+        ratio: { value: 0 },
+        attack: { value: 0 },
+        release: { value: 0 },
+        connect() {}
+      };
+    }
+
+    createBufferSource() {
+      sourceCount += 1;
+      return {
+        buffer: null,
+        playbackRate: audioParam(),
+        connect() {},
+        start() {},
+        stop() {}
+      };
+    }
+  };
+
+  try {
+    const audio = await import("../src/audio.js?on-demand-decode-test");
+    await audio.playMidiNotes([60, 64, 67, 71], { duration: 1 });
+
+    assert.equal(contextCreations, 1);
+    assert.equal(decodeCount, 4);
+    assert.equal(sourceCount, 4);
+    assert.equal(audio.pianoSampleStatus().decoded, 4);
+    assert.equal(audio.pianoSampleStatus().ready, true);
+  } finally {
+    restoreGlobal("fetch", originalFetch);
+    restoreGlobal("AudioContext", originalAudioContext);
+  }
 });
 
 test("provides layered playback textures including the original block chord", () => {
@@ -226,4 +398,20 @@ function rhythmicSlots(events, duration) {
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+function audioParam() {
+  return {
+    value: 0,
+    setValueAtTime() {},
+    exponentialRampToValueAtTime() {}
+  };
+}
+
+function restoreGlobal(name, value) {
+  if (value === undefined) {
+    delete globalThis[name];
+  } else {
+    globalThis[name] = value;
+  }
 }
