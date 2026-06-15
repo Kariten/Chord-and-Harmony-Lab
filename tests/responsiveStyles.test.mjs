@@ -22,3 +22,18 @@ test("disables mobile text autosizing to preserve fixed panel proportions", () =
     /html\s*\{[^}]*-webkit-text-size-adjust:\s*100%[^}]*text-size-adjust:\s*100%/s
   );
 });
+
+test("uses a full-width harmony panel only in narrow portrait layouts", () => {
+  assert.match(
+    styles,
+    /@media \(max-width: 900px\)\s*\{[\s\S]*?\.control-band,\s*\.workspace-grid\s*\{[^}]*grid-template-columns:\s*1fr 1fr[^}]*\}/s
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 900px\) and \(orientation: portrait\)\s*\{[\s\S]*?\.workspace-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*\}[\s\S]*?\.harmony-panel,\s*\.analysis-panel\s*\{[^}]*grid-column:\s*1[^}]*\}/s
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 760px\) and \(orientation: portrait\)\s*\{[\s\S]*?\.degree-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(140px, 1fr\)\)[^}]*\}/s
+  );
+});

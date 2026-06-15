@@ -2067,6 +2067,17 @@ html[data-theme="dark"] .guitar-fret-line {
   }
 }
 
+@media (max-width: 900px) and (orientation: portrait) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .harmony-panel,
+  .analysis-panel {
+    grid-column: 1;
+  }
+}
+
 @media (max-width: 760px) {
   .app-shell {
     width: min(100vw - 20px, 720px);
@@ -2098,6 +2109,12 @@ html[data-theme="dark"] .guitar-fret-line {
 
   .piano {
     height: 330px;
+  }
+}
+
+@media (max-width: 760px) and (orientation: portrait) {
+  .degree-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 }
 
