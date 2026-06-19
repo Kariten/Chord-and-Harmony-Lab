@@ -9,6 +9,10 @@ test("keeps short wide tablet layouts within the viewport", () => {
     styles,
     /@media \(min-width: 901px\) and \(max-height: 700px\)\s*\{[\s\S]*?body\s*\{[^}]*overflow:\s*hidden[^}]*\}[\s\S]*?\.app-shell\s*\{[^}]*grid-template-rows:\s*92px 58px minmax\(0, 1fr\) 172px[^}]*height:\s*100dvh/s
   );
+  assert.match(
+    styles,
+    /@media \(min-width: 901px\) and \(max-height: 700px\)\s*\{[\s\S]*?\.degree-grid\s*\{[^}]*min-height:\s*0[^}]*grid-auto-rows:\s*220px[^}]*overflow:\s*auto/s
+  );
 });
 
 test("only uses the document scrolling fallback on narrow short screens", () => {

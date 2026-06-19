@@ -2221,6 +2221,12 @@ html[data-theme="dark"] .guitar-fret-line {
   .degree-controls {
     margin-bottom: 6px;
   }
+
+  .degree-grid {
+    min-height: 0;
+    grid-auto-rows: 220px;
+    overflow: auto;
+  }
 }
 
 @media (max-width: 900px) {
