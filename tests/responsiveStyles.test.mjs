@@ -38,6 +38,13 @@ test("uses a full-width harmony panel only in narrow portrait layouts", () => {
   );
 });
 
+test("keeps medium landscape degree controls in a single compact row", () => {
+  assert.match(
+    styles,
+    /@media \(min-width: 901px\) and \(orientation: landscape\)\s*\{[\s\S]*?\.degree-controls\s*\{[^}]*grid-template-columns:\s*minmax\(58px, 68px\) minmax\(150px, 1fr\) minmax\(138px, 0\.68fr\) minmax\(96px, 112px\)[^}]*\}[\s\S]*?\.degree-controls \.field:first-child\s*\{[^}]*max-width:\s*68px[^}]*\}[\s\S]*?\.degree-controls \.segmented,\s*#playProgression\s*\{[^}]*grid-row:\s*auto[^}]*\}/s
+  );
+});
+
 test("allows nested scrollers to hand vertical movement back to the page", () => {
   assert.match(
     styles,

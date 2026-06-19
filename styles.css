@@ -2025,6 +2025,26 @@ html[data-theme="dark"] .guitar-fret-line {
   }
 }
 
+@media (min-width: 901px) and (orientation: landscape) {
+  .degree-controls {
+    grid-template-columns: minmax(58px, 68px) minmax(150px, 1fr) minmax(138px, 0.68fr) minmax(96px, 112px);
+  }
+
+  .degree-controls .field:first-child {
+    max-width: 68px;
+  }
+
+  .degree-controls .segmented,
+  #playProgression {
+    grid-row: auto;
+  }
+
+  #keySelect {
+    padding-right: 28px;
+    font-size: 15px;
+  }
+}
+
 @media (max-width: 900px) {
   body {
     height: auto;
