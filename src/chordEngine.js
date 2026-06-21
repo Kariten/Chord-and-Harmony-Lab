@@ -99,6 +99,19 @@ export const MODES = [
   }
 ];
 
+const MODAL_INTERCHANGE_MODE_PRIORITY = [
+  "ionian",
+  "aeolian",
+  "dorian",
+  "mixolydian",
+  "lydian",
+  "harmonic-minor",
+  "melodic-minor",
+  "phrygian",
+  "harmonic-major",
+  "locrian"
+];
+
 const ROMANS = ["I", "II", "III", "IV", "V", "VI", "VII"];
 const SCALE_DEGREES = ["1", "2", "3", "4", "5", "6", "7"];
 
@@ -251,6 +264,28 @@ export function buildDiatonicChords(keyPc, modeId, chordSize = "seventh") {
   });
 }
 
+export function modalInterchangeChords(keyPc, modeId, degree, chordSize = "seventh", limit = 3) {
+  const degreeIndex = Number(degree) - 1;
+  if (!Number.isInteger(degreeIndex) || degreeIndex < 0 || degreeIndex > 6 || limit <= 0) return [];
+
+  const currentChord = buildDiatonicChords(keyPc, modeId, chordSize)[degreeIndex];
+  const seenPitchSets = new Set([pitchClassSetKey(currentChord.pitchClasses)]);
+  const results = [];
+
+  for (const candidateModeId of MODAL_INTERCHANGE_MODE_PRIORITY) {
+    if (candidateModeId === modeId) continue;
+    const chord = buildDiatonicChords(keyPc, candidateModeId, chordSize)[degreeIndex];
+    const pitchSet = pitchClassSetKey(chord.pitchClasses);
+    if (seenPitchSets.has(pitchSet)) continue;
+
+    seenPitchSets.add(pitchSet);
+    results.push({ ...chord, sourceModeId: candidateModeId });
+    if (results.length >= limit) break;
+  }
+
+  return results;
+}
+
 export function identifyChord(values, options = {}) {
   const preferFlats = options.preferFlats ?? false;
   const rawValues = [...values].map(Number).filter(Number.isFinite);
@@ -360,6 +395,10 @@ function intervalsFromRoot(rootPc, pitchClasses) {
 
 function intervalKey(intervals) {
   return uniquePitchClasses(intervals).join(",");
+}
+
+function pitchClassSetKey(pitchClasses) {
+  return uniquePitchClasses(pitchClasses).join(",");
 }
 
 function chordName(rootPc, suffix, preferFlats) {

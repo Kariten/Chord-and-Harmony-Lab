@@ -7,6 +7,7 @@ import {
   identifyChord,
   intervalLabel,
   keyByPc,
+  modalInterchangeChords,
   modeById,
   noteName,
   noteNameWithOctave,
@@ -15,7 +16,7 @@ import {
   scaleNoteNames,
   scalePitchClasses,
   scaleUsesFlats
-} from "./chordEngine.js";
+} from "./chordEngine.js?v=20260622.1";
 import {
   DEFAULT_BPM,
   PLAYBACK_TEXTURES,
@@ -26,7 +27,7 @@ import {
   preloadPianoSamples
 } from "./audio.js?v=20260615.1";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260621.1";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260622.1";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 import {
   createDegreeProgressionItem,
@@ -1129,10 +1130,32 @@ function renderProgressionDirections(chord) {
   dom.resolutionList.replaceChildren();
   const scale = scalePitchClasses(state.keyPc, state.modeId);
   const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
-  const directions = progressionDirectionsForChord(chord, scale)
+  const functionalDirections = progressionDirectionsForChord(chord, scale)
     .map((direction) => ({ ...direction, chord: chords[direction.targetDegree - 1] }))
     .filter((direction) => direction.chord)
     .slice(0, 3);
+  const modalDegree = inferModalInterchangeDegree(chord, scale);
+  const modalDirections = modalInterchangeChords(
+    state.keyPc,
+    state.modeId,
+    modalDegree,
+    state.chordSize,
+    3
+  ).map((modalChord) => ({
+    chord: modalChord,
+    labelKey: "directionModalInterchange",
+    sourceModeId: modalChord.sourceModeId
+  }));
+  const sourcePitchSet = chord?.pitchClasses
+    ? [...chord.pitchClasses].sort((a, b) => a - b).join(",")
+    : "";
+  const seenPitchSets = new Set(sourcePitchSet ? [sourcePitchSet] : []);
+  const directions = [...functionalDirections, ...modalDirections].filter((direction) => {
+    const pitchSet = [...direction.chord.pitchClasses].sort((a, b) => a - b).join(",");
+    if (seenPitchSets.has(pitchSet)) return false;
+    seenPitchSets.add(pitchSet);
+    return true;
+  });
 
   if (directions.length === 0) {
     const empty = document.createElement("span");
@@ -1145,6 +1168,7 @@ function renderProgressionDirections(chord) {
   directions.forEach((direction) => {
     const chip = document.createElement("span");
     chip.className = "resolution-chip";
+    chip.classList.toggle("modal-interchange", Boolean(direction.sourceModeId));
 
     const arrow = document.createElement("span");
     arrow.className = "resolution-arrow";
@@ -1155,11 +1179,31 @@ function renderProgressionDirections(chord) {
     name.textContent = direction.chord.name;
 
     const label = document.createElement("small");
-    label.textContent = t(direction.labelKey);
+    label.textContent = direction.sourceModeId
+      ? `${t(direction.labelKey)} · ${modeById(direction.sourceModeId).shortName}`
+      : t(direction.labelKey);
 
     chip.append(arrow, name, label);
     dom.resolutionList.append(chip);
   });
+}
+
+function inferModalInterchangeDegree(chord, activeScale) {
+  if (!chord) return 0;
+  const explicitDegree = Number(chord.degree);
+  if (Number.isInteger(explicitDegree) && explicitDegree >= 1 && explicitDegree <= 7) return explicitDegree;
+
+  const activeDegree = activeScale.indexOf(chord.rootPc) + 1;
+  if (activeDegree > 0) return activeDegree;
+
+  for (const mode of MODES) {
+    const matchingChord = buildDiatonicChords(state.keyPc, mode.id, state.chordSize).find((candidate) => {
+      return candidate.rootPc === chord.rootPc && samePitchClassSet(candidate.pitchClasses, chord.pitchClasses ?? []);
+    });
+    if (matchingChord) return matchingChord.degree;
+  }
+
+  return 0;
 }
 
 function playActiveSound() {

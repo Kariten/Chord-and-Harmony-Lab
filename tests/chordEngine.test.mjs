@@ -8,6 +8,7 @@ import {
   chordMidiVoicing,
   identifyChord,
   intervalLabel,
+  modalInterchangeChords,
   noteName,
   scaleNoteNames,
   scalePitchClasses
@@ -45,6 +46,17 @@ test("uses modal spellings for diatonic chord roots and chord tones", () => {
   const dbHarmonicMajor = buildDiatonicChords(1, "harmonic-major", "triad");
   assert.equal(dbHarmonicMajor[5].name, "Bbbaug");
   assert.deepEqual(dbHarmonicMajor[5].notes, ["Bbb", "Db", "F"]);
+});
+
+test("suggests unique same-degree chords from parallel modes", () => {
+  const borrowedTonics = modalInterchangeChords(0, "ionian", 1, "seventh", 3);
+  assert.deepEqual(borrowedTonics.map((chord) => chord.name), ["Cm7", "C7", "CmMaj7"]);
+  assert.deepEqual(borrowedTonics.map((chord) => chord.sourceModeId), ["aeolian", "mixolydian", "harmonic-minor"]);
+  assert.ok(borrowedTonics.every((chord) => chord.degree === 1));
+
+  const pitchSets = borrowedTonics.map((chord) => [...chord.pitchClasses].sort((a, b) => a - b).join(","));
+  assert.equal(new Set(pitchSets).size, borrowedTonics.length);
+  assert.equal(modalInterchangeChords(0, "ionian", 0).length, 0);
 });
 
 test("centers default chord playback near the middle octave", () => {
