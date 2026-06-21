@@ -4,6 +4,41 @@ const FUNCTION_GROUPS = {
   D: new Set([5, 7])
 };
 
+const DEGREE_DIRECTIONS = {
+  1: [
+    { targetDegree: 4, labelKey: "directionPredominant" },
+    { targetDegree: 2, labelKey: "directionPredominant" },
+    { targetDegree: 5, labelKey: "directionDominant" }
+  ],
+  2: [
+    { targetDegree: 5, labelKey: "directionDominant" },
+    { targetDegree: 7, labelKey: "directionDominant" },
+    { targetDegree: 1, labelKey: "directionResolution" }
+  ],
+  3: [
+    { targetDegree: 6, labelKey: "directionExpansion" },
+    { targetDegree: 4, labelKey: "directionPredominant" }
+  ],
+  4: [
+    { targetDegree: 5, labelKey: "directionDominant" },
+    { targetDegree: 1, labelKey: "directionResolution" },
+    { targetDegree: 2, labelKey: "directionPredominant" }
+  ],
+  5: [
+    { targetDegree: 1, labelKey: "directionResolution" },
+    { targetDegree: 6, labelKey: "directionDeceptive" }
+  ],
+  6: [
+    { targetDegree: 2, labelKey: "directionPredominant" },
+    { targetDegree: 4, labelKey: "directionPredominant" },
+    { targetDegree: 5, labelKey: "directionDominant" }
+  ],
+  7: [
+    { targetDegree: 1, labelKey: "directionResolution" },
+    { targetDegree: 3, labelKey: "directionExpansion" }
+  ]
+};
+
 export const PROGRESSION_TOUCH_HOLD_MS = 350;
 
 export function functionGroupForDegree(degree) {
@@ -14,6 +49,41 @@ export function functionGroupForDegree(degree) {
 export function functionGroupForRoot(rootPc, scalePitchClasses) {
   const degreeIndex = scalePitchClasses.findIndex((pitchClass) => pitchClass === rootPc);
   return degreeIndex < 0 ? "N" : functionGroupForDegree(degreeIndex + 1);
+}
+
+export function progressionDirectionsForDegree(degree) {
+  return (DEGREE_DIRECTIONS[Number(degree)] ?? []).map((direction) => ({ ...direction }));
+}
+
+export function progressionDirectionsForChord(chord, scalePitchClasses) {
+  if (!chord || !Array.isArray(scalePitchClasses) || scalePitchClasses.length < 7) return [];
+
+  const scale = scalePitchClasses.map(normalizePitchClass);
+  const rootPc = normalizePitchClass(chord.rootPc);
+  const intervals = new Set((chord.intervals ?? []).map(normalizePitchClass));
+  const isDominant = intervals.has(4) && intervals.has(10);
+  const isDiminished = intervals.has(3) && intervals.has(6);
+
+  if (isDominant) {
+    const targetDegree = scale.indexOf(normalizePitchClass(rootPc + 5)) + 1;
+    if (targetDegree > 0) {
+      const directions = [{ targetDegree, labelKey: "directionResolution" }];
+      if (targetDegree === 1) directions.push({ targetDegree: 6, labelKey: "directionDeceptive" });
+      return directions;
+    }
+  }
+
+  if (isDiminished) {
+    const targetDegree = scale.indexOf(normalizePitchClass(rootPc + 1)) + 1;
+    if (targetDegree > 0) return [{ targetDegree, labelKey: "directionResolution" }];
+  }
+
+  const sourceDegree = Number(chord.degree) || scale.indexOf(rootPc) + 1;
+  return progressionDirectionsForDegree(sourceDegree);
+}
+
+function normalizePitchClass(value) {
+  return ((Number(value) % 12) + 12) % 12;
 }
 
 export function createDegreeProgressionItem(chord, midiNotes, id) {

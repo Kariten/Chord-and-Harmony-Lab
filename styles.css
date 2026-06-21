@@ -1044,7 +1044,8 @@ select:disabled {
   font-size: 18px;
 }
 
-.alias-list {
+.alias-list,
+.resolution-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -1056,6 +1057,7 @@ select:disabled {
 }
 
 .alias-chip,
+.resolution-chip,
 .tone-pill {
   display: grid;
   gap: 2px;
@@ -1067,7 +1069,41 @@ select:disabled {
   background: #f8fafc;
 }
 
+.resolution-chip {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "arrow name"
+    "arrow label";
+  align-items: center;
+  column-gap: 7px;
+  min-width: 112px;
+}
+
+.resolution-arrow {
+  grid-area: arrow;
+  color: var(--blue);
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.resolution-chip strong {
+  grid-area: name;
+}
+
+.resolution-chip small {
+  grid-area: label;
+}
+
+.resolution-empty {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
 .alias-chip strong,
+.resolution-chip strong,
 .tone-pill strong {
   font-size: 18px;
   line-height: 1;
@@ -1075,6 +1111,7 @@ select:disabled {
 }
 
 .alias-chip small,
+.resolution-chip small,
 .tone-pill span {
   color: var(--muted);
   font-size: 12px;
@@ -1631,6 +1668,7 @@ html[data-theme="dark"] .bpm-control,
 html[data-theme="dark"] .degree-card,
 html[data-theme="dark"] .analysis-tab.active,
 html[data-theme="dark"] .alias-chip,
+html[data-theme="dark"] .resolution-chip,
 html[data-theme="dark"] .tone-pill,
 html[data-theme="dark"] .info-tip-bubble,
 html[data-theme="dark"] .guitar-card {

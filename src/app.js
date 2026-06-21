@@ -26,7 +26,7 @@ import {
   preloadPianoSamples
 } from "./audio.js?v=20260615.1";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260614.5";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260621.1";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 import {
   createDegreeProgressionItem,
@@ -34,12 +34,13 @@ import {
   moveProgressionItem,
   PROGRESSION_TOUCH_HOLD_MS,
   progressionDragSwapDirection,
+  progressionDirectionsForChord,
   progressionPianoHighlight,
   progressionTouchIntent,
   removeProgressionItem,
   restoreProgressionQueue,
   shouldUseNativeProgressionDrag
-} from "./progression.js?v=20260615.2";
+} from "./progression.js?v=20260621.1";
 
 const state = {
   language: localStorage.getItem("chordLabLanguage") || DEFAULT_LANGUAGE,
@@ -112,6 +113,7 @@ const dom = {
   detectedName: document.querySelector("#detectedName"),
   detectedFormula: document.querySelector("#detectedFormula"),
   aliasList: document.querySelector("#aliasList"),
+  resolutionList: document.querySelector("#resolutionList"),
   toneMap: document.querySelector("#toneMap"),
   guitarSummary: document.querySelector("#guitarSummary"),
   guitarVoicingList: document.querySelector("#guitarVoicingList"),
@@ -861,6 +863,7 @@ function renderAnalysis(activeChord, preferFlats) {
     dom.detectedName.textContent = activeChord.name;
     dom.detectedFormula.textContent = `${activeChord.quality}｜${activeChord.intervals.map(intervalLabel).join("  ")}`;
     renderAliases(activeChord.aliases.map((symbol) => ({ symbol, quality: t("aliasLabel") })));
+    renderProgressionDirections(activeChord);
     renderToneMap(activeChord.rootPc, activeChord.pitchClasses, preferFlats, activeChord.notes);
     renderGuitarReference({
       name: activeChord.name,
@@ -880,6 +883,7 @@ function renderAnalysis(activeChord, preferFlats) {
     dom.detectedName.textContent = manual.primary.symbol;
     dom.detectedFormula.textContent = `${manual.primary.quality}｜${manual.primary.intervalLabels.join("  ")}`;
     renderAliases(manual.aliases);
+    renderProgressionDirections(manual.primary);
     renderToneMap(manual.primary.rootPc, manual.pitchClasses, preferFlats);
     renderGuitarReference({
       name: manual.primary.symbol,
@@ -898,6 +902,7 @@ function renderAnalysis(activeChord, preferFlats) {
     symbol: suggestion.symbol,
     quality: suggestion.missing.length ? t("missing", { notes: suggestion.missing.join(" ") }) : suggestion.quality
   })));
+  renderProgressionDirections(null);
   renderToneMap(null, manual.pitchClasses, preferFlats);
   renderGuitarReference(null);
 }
@@ -1117,6 +1122,43 @@ function renderPianoState(activeChord, preferFlats) {
     button.classList.toggle("root-tone", pitchClass === activeRoot && isChordTone);
     button.classList.toggle("sounding", state.playbackMidis.has(midi));
     button.querySelector("span").textContent = noteNameWithOctave(midi, preferFlats);
+  });
+}
+
+function renderProgressionDirections(chord) {
+  dom.resolutionList.replaceChildren();
+  const scale = scalePitchClasses(state.keyPc, state.modeId);
+  const chords = buildDiatonicChords(state.keyPc, state.modeId, state.chordSize);
+  const directions = progressionDirectionsForChord(chord, scale)
+    .map((direction) => ({ ...direction, chord: chords[direction.targetDegree - 1] }))
+    .filter((direction) => direction.chord)
+    .slice(0, 3);
+
+  if (directions.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "resolution-empty";
+    empty.textContent = t("noProgressionDirections");
+    dom.resolutionList.append(empty);
+    return;
+  }
+
+  directions.forEach((direction) => {
+    const chip = document.createElement("span");
+    chip.className = "resolution-chip";
+
+    const arrow = document.createElement("span");
+    arrow.className = "resolution-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "→";
+
+    const name = document.createElement("strong");
+    name.textContent = direction.chord.name;
+
+    const label = document.createElement("small");
+    label.textContent = t(direction.labelKey);
+
+    chip.append(arrow, name, label);
+    dom.resolutionList.append(chip);
   });
 }
 

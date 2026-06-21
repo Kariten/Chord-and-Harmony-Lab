@@ -8,6 +8,8 @@ import {
   functionGroupForRoot,
   moveProgressionItem,
   progressionDragSwapDirection,
+  progressionDirectionsForChord,
+  progressionDirectionsForDegree,
   progressionPianoHighlight,
   progressionTouchIntent,
   removeProgressionItem,
@@ -25,6 +27,29 @@ test("classifies detected chord roots against the active scale", () => {
   assert.equal(functionGroupForRoot(5, cMajor), "S");
   assert.equal(functionGroupForRoot(7, cMajor), "D");
   assert.equal(functionGroupForRoot(1, cMajor), "N");
+});
+
+test("suggests functional next chords for each diatonic degree", () => {
+  assert.deepEqual(progressionDirectionsForDegree(5), [
+    { targetDegree: 1, labelKey: "directionResolution" },
+    { targetDegree: 6, labelKey: "directionDeceptive" }
+  ]);
+  assert.deepEqual(progressionDirectionsForDegree(4).map((item) => item.targetDegree), [5, 1, 2]);
+  assert.deepEqual(progressionDirectionsForDegree(99), []);
+});
+
+test("uses chord tendency for detected dominant and diminished chords", () => {
+  const cMajor = [0, 2, 4, 5, 7, 9, 11];
+  assert.deepEqual(progressionDirectionsForChord({ rootPc: 7, intervals: [0, 4, 7, 10] }, cMajor), [
+    { targetDegree: 1, labelKey: "directionResolution" },
+    { targetDegree: 6, labelKey: "directionDeceptive" }
+  ]);
+  assert.deepEqual(progressionDirectionsForChord({ rootPc: 1, intervals: [0, 3, 6] }, cMajor), [
+    { targetDegree: 2, labelKey: "directionResolution" }
+  ]);
+  assert.deepEqual(progressionDirectionsForChord({ rootPc: 9, intervals: [0, 4, 7, 10] }, cMajor), [
+    { targetDegree: 2, labelKey: "directionResolution" }
+  ]);
 });
 
 test("keeps degree and user-input voicings in progression items", () => {
