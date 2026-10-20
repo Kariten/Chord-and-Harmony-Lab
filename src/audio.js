@@ -52,6 +52,7 @@ export function barDurationForBpm(bpm) {
 }
 
 export async function playMidiNotes(midiNotes, options = {}) {
+  if (options.signal?.aborted) return;
   const notes = [...new Set(midiNotes)].sort((a, b) => a - b);
   if (!notes.length) return;
 
@@ -74,6 +75,7 @@ export async function playMidiNotes(midiNotes, options = {}) {
   });
   const { eventEnd, playbackEnd } = playbackWindow(events, duration);
   const samples = await ensurePianoSamples(context, events.map((event) => event.midi));
+  if (options.signal?.aborted) return;
   reportAudioEngine(samples.size > 0);
   const now = context.currentTime + 0.012;
   const master = context.createGain();
@@ -93,13 +95,33 @@ export async function playMidiNotes(midiNotes, options = {}) {
   master.connect(compressor);
   compressor.connect(context.destination);
 
-  events.forEach((event) => {
+  const sources = events.flatMap((event) => {
     if (samples.size) {
-      playSampledPianoEvent(context, master, samples, event, now);
-    } else {
-      playSynthFallbackEvent(context, master, event, now, playbackEnd);
+      return playSampledPianoEvent(context, master, samples, event, now);
     }
+    return playSynthFallbackEvent(context, master, event, now, playbackEnd);
   });
+  const disconnect = () => {
+    options.signal?.removeEventListener("abort", cancel);
+    master.disconnect();
+    compressor.disconnect();
+  };
+  const cancel = () => {
+    sources.forEach((source) => {
+      try { source.stop(); } catch {}
+    });
+    disconnect();
+  };
+  let remainingSources = sources.length;
+  sources.forEach((source) => {
+    source.onended = () => {
+      source.disconnect();
+      remainingSources -= 1;
+      if (remainingSources === 0) disconnect();
+    };
+  });
+  if (sources.length === 0) disconnect();
+  else options.signal?.addEventListener("abort", cancel, { once: true });
 }
 
 export function preloadPianoSamples() {
@@ -262,7 +284,7 @@ function reportAudioEngine(sampled) {
 function playSampledPianoEvent(context, output, samples, event, now) {
   const available = PIANO_SAMPLES.filter((sample) => samples.has(sample.midi));
   const sample = pianoSampleForMidi(event.midi, available);
-  if (!sample) return;
+  if (!sample) return [];
 
   const start = now + event.time;
   const releaseStart = start + Math.max(0.12, event.duration);
@@ -282,6 +304,7 @@ function playSampledPianoEvent(context, output, samples, event, now) {
   gain.connect(output);
   source.start(start);
   source.stop(Math.min(stop + 0.04, start + source.buffer.duration / sample.playbackRate));
+  return [source];
 }
 
 function playSynthFallbackEvent(context, output, event, now, playbackEnd) {
@@ -319,6 +342,7 @@ function playSynthFallbackEvent(context, output, event, now, playbackEnd) {
   overtone.start(start);
   osc.stop(stop);
   overtone.stop(stop);
+  return [osc, overtone];
 }
 
 export function chordPlaybackEvents(midiNotes, options = {}) {

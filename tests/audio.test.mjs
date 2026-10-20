@@ -226,6 +226,65 @@ test("decodes only the samples needed for the first played chord", async () => {
   }
 });
 
+test("queue cancellation stops sounding sources and prevents late sample playback", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalAudioContext = globalThis.AudioContext;
+  const sources = [];
+  let decode;
+  let decodingStarted;
+  const started = new Promise((resolve) => { decodingStarted = resolve; });
+  let waitForDecode = false;
+  globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new Uint8Array(2048).buffer });
+  globalThis.AudioContext = class {
+    state = "running";
+    currentTime = 0;
+    destination = {};
+    decodeAudioData() {
+      if (!waitForDecode) return Promise.resolve({ duration: 4 });
+      decodingStarted();
+      return new Promise((resolve) => { decode = resolve; });
+    }
+    createGain() { return { gain: audioParam(), connect() {}, disconnect() {} }; }
+    createDynamicsCompressor() {
+      return {
+        threshold: {}, knee: {}, ratio: {}, attack: {}, release: {},
+        connect() {}, disconnect() {}
+      };
+    }
+    createBufferSource() {
+      const source = {
+        playbackRate: audioParam(), stops: [], connect() {}, disconnect() {}, start() {},
+        stop(at) { this.stops.push(at); }
+      };
+      sources.push(source);
+      return source;
+    }
+  };
+  try {
+    const audio = await import("../src/audio.js?queue-cancellation");
+    const active = new AbortController();
+    await audio.playMidiNotes([60], { signal: active.signal });
+    assert.equal(sources.length, 1);
+    active.abort();
+    assert.equal(sources[0].stops.at(-1), undefined);
+    sources[0].onended();
+
+    const waiting = new AbortController();
+    waitForDecode = true;
+    const playback = audio.playMidiNotes([72], { signal: waiting.signal });
+    await started;
+    waiting.abort();
+    decode({ duration: 4 });
+    await playback;
+    assert.equal(sources.length, 1, "cancelled sample loading must not create a source");
+    await audio.playMidiNotes([60], { signal: waiting.signal });
+    assert.equal(sources.length, 1, "already cancelled playback must stay silent");
+  } finally {
+    restoreGlobal("fetch", originalFetch);
+    restoreGlobal("AudioContext", originalAudioContext);
+  }
+});
+
 test("provides layered playback textures including the original block chord", () => {
   assert.deepEqual(
     PLAYBACK_TEXTURES.map((texture) => texture.id),

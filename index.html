@@ -11,7 +11,7 @@
         }
       } catch {}
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260621.1" />
+    <link rel="stylesheet" href="./styles.css?v=20261020.1" />
   </head>
   <body>
     <main class="app-shell">
@@ -55,6 +55,11 @@
             <label class="field texture-field">
               <span data-i18n="texture">织体</span>
               <select id="textureSelect"></select>
+            </label>
+            <label class="switch-field loop-switch-field">
+              <span data-i18n="loopQueue">循环播放</span>
+              <input id="loopQueueToggle" type="checkbox" />
+              <i aria-hidden="true"></i>
             </label>
             <label class="field bpm-field">
               <span>BPM</span>
@@ -185,6 +190,6 @@
       </section>
     </main>
 
-    <script type="module" src="./src/app.js?v=20260622.1"></script>
+    <script type="module" src="./src/app.js?v=20261020.1"></script>
   </body>
 </html>

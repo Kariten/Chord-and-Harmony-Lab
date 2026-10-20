@@ -25,9 +25,10 @@ import {
   normalizeBpm,
   playMidiNotes,
   preloadPianoSamples
-} from "./audio.js?v=20260615.1";
+} from "./audio.js?v=20261020.1";
 import { guitarVoicings, STANDARD_GUITAR_TUNING } from "./guitarVoicings.js";
-import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20260622.1";
+import { DEFAULT_LANGUAGE, LANGUAGES, modeLabel, translate } from "./i18n.js?v=20261020.1";
+import { startQueuePlayback } from "./queuePlayback.js?v=20261020.1";
 import { describeMidiSupport, midiInputLabel, parseMidiMessage } from "./midi.js";
 import {
   createDegreeProgressionItem,
@@ -60,11 +61,11 @@ const state = {
   guitarEnabled: localStorage.getItem("chordLabGuitarEnabled") !== "false",
   darkMode: localStorage.getItem("chordLabDarkMode") === "true",
   texture: localStorage.getItem("chordLabTexture") || "block",
+  loopQueue: localStorage.getItem("chordLabLoopQueue") === "true",
   bpm: normalizeBpm(localStorage.getItem("chordLabBpm"), DEFAULT_BPM),
   progressionTimers: [],
   isPlayingProgression: false,
   progressionQueue: loadProgressionQueue(),
-  queueTimers: [],
   isPlayingQueue: false,
   activeQueueItemId: "",
   playbackMidis: new Set(),
@@ -78,6 +79,7 @@ const dom = {
   modeSelect: document.querySelector("#modeSelect"),
   languageSelect: document.querySelector("#languageSelect"),
   textureSelect: document.querySelector("#textureSelect"),
+  loopQueueToggle: document.querySelector("#loopQueueToggle"),
   bpmRange: document.querySelector("#bpmRange"),
   bpmInput: document.querySelector("#bpmInput"),
   triadButton: document.querySelector("#triadButton"),
@@ -125,6 +127,7 @@ const dom = {
 const PIANO_KEYS = pianoKeys(48, 83);
 let progressionId = 0;
 let progressionDragSession = null;
+let queuePlayback = null;
 
 function loadProgressionQueue() {
   try {
@@ -159,6 +162,10 @@ function init() {
   });
 
   dom.bpmRange.addEventListener("input", () => updateBpm(dom.bpmRange.value));
+  dom.loopQueueToggle.addEventListener("change", () => {
+    state.loopQueue = dom.loopQueueToggle.checked;
+    localStorage.setItem("chordLabLoopQueue", String(state.loopQueue));
+  });
   dom.bpmInput.addEventListener("input", () => {
     if (dom.bpmInput.value !== "") updateBpm(dom.bpmInput.value);
   });
@@ -351,7 +358,8 @@ function render() {
   dom.playProgression.disabled = state.isPlayingProgression;
   dom.guitarToggle.checked = state.guitarEnabled;
   applyTheme();
-  dom.playQueue.disabled = state.progressionQueue.length === 0 || state.isPlayingQueue;
+  dom.loopQueueToggle.checked = state.loopQueue;
+  dom.playQueue.disabled = state.progressionQueue.length === 0;
   dom.clearQueue.disabled = state.progressionQueue.length === 0;
 
   renderProgressionQueue();
@@ -600,7 +608,7 @@ function saveProgressionQueue() {
 
 function renderProgressionQueue() {
   dom.progressionTitle.textContent = t("progression");
-  dom.playQueue.textContent = t("playQueue");
+  dom.playQueue.textContent = t(state.isPlayingQueue ? "stopQueue" : "playQueue");
   dom.clearQueue.textContent = t("clearQueue");
   dom.controlBand.setAttribute("aria-label", t("progressionWorkspace"));
   dom.progressionQueue.setAttribute("aria-label", t("progressionQueue"));
@@ -1378,8 +1386,8 @@ function clearProgressionTimers() {
 }
 
 function clearQueueTimers() {
-  state.queueTimers.forEach((timer) => window.clearTimeout(timer));
-  state.queueTimers = [];
+  queuePlayback?.stop();
+  queuePlayback = null;
   state.isPlayingQueue = false;
   state.activeQueueItemId = "";
   clearPlaybackPianoState();
@@ -1399,6 +1407,11 @@ function clearPlaybackPianoState() {
 }
 
 function playProgressionQueue() {
+  if (state.isPlayingQueue) {
+    clearQueueTimers();
+    render();
+    return;
+  }
   if (state.progressionQueue.length === 0) return;
   clearProgressionTimers();
   clearQueueTimers();
@@ -1409,33 +1422,30 @@ function playProgressionQueue() {
   }));
   const texture = state.texture;
   const duration = barDurationForBpm(state.bpm);
-  let delay = 0;
-  let playbackEnd = 0;
-
   state.isPlayingQueue = true;
   render();
-
-  queue.forEach((item) => {
-    const options = { texture, duration, spread: 0.012, rootPc: item.rootPc };
-    const timer = window.setTimeout(() => {
+  const lastItem = queue[queue.length - 1];
+  const playbackEnd = midiPlaybackWindow(lastItem.midiNotes, {
+    texture, duration, spread: 0.012, rootPc: lastItem.rootPc
+  }).playbackEnd;
+  queuePlayback = startQueuePlayback(queue, {
+    duration,
+    playbackEnd,
+    shouldLoop: () => state.loopQueue,
+    onChord: (item, signal) => {
       state.activeQueueItemId = item.id;
       setPlaybackPianoState(item.midiNotes, item.rootPc);
       render();
-      playChord(item.midiNotes, { duration, spread: 0.012, rootPc: item.rootPc });
-    }, delay * 1000);
-    state.queueTimers.push(timer);
-    playbackEnd = delay + midiPlaybackWindow(item.midiNotes, options).playbackEnd;
-    delay += duration;
+      playChord(item.midiNotes, { texture, duration, spread: 0.012, rootPc: item.rootPc, signal });
+    },
+    onFinish: () => {
+      queuePlayback = null;
+      state.isPlayingQueue = false;
+      state.activeQueueItemId = "";
+      clearPlaybackPianoState();
+      render();
+    }
   });
-
-  const doneTimer = window.setTimeout(() => {
-    state.queueTimers = [];
-    state.isPlayingQueue = false;
-    state.activeQueueItemId = "";
-    clearPlaybackPianoState();
-    render();
-  }, playbackEnd * 1000);
-  state.queueTimers.push(doneTimer);
 }
 
 function playProgression() {
